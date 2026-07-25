@@ -234,6 +234,8 @@ h1,h2,h3{
 .work-url{font-size:.82rem; font-weight:600; opacity:.75; word-break:break-all;}
 .work-arrow{font-size:1.3rem; color:var(--rose); transition:transform .18s ease;}
 .work-card:hover .work-arrow{transform:translate(4px,-4px);}
+/* 사이트 내부로 이동하는 카드(→)는 대각선이 아니라 오른쪽으로만 움직인다 */
+.work-card[href^="html/"]:hover .work-arrow{transform:translateX(6px);}
 
 @media (max-width:560px){
   .work-card{padding:26px 22px;}

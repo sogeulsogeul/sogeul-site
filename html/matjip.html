@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>맛집 순위 — sogeul</title>
+<meta name="description" content="구글 지도 평점을 기준으로 지역별 맛집 순위를 보여주는 페이지입니다.">
+<link rel="stylesheet" as="style" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.css">
+<link rel="stylesheet" href="../assets/css/matjip.css">
+</head>
+<body>
+
+<a href="#main" class="skip-link">본문 바로가기</a>
+
+<header class="site-header">
+  <a class="back-link" href="../index.html"><span aria-hidden="true">←</span> 소글 홈으로</a>
+  <div class="brand-mark" aria-hidden="true"></div>
+  <p class="eyebrow">Prototype · 목업 데이터</p>
+  <h1>맛집 순위</h1>
+  <p class="lede">구글 지도와 네이버 지도 데이터를 기준으로 지역별 맛집 순위를 보여줍니다. 지금은 구글 Places API 연동 전 단계라 목업 데이터로 화면과 정렬 로직을 확인하는 프로토타입입니다.</p>
+</header>
+
+<main id="main">
+
+  <div class="filter-bar">
+    <form>
+      <fieldset class="region-select">
+        <legend>지역 선택</legend>
+        <div class="region-chips" id="region-chips"></div>
+      </fieldset>
+    </form>
+  </div>
+
+  <p class="service-note" id="service-note"></p>
+
+  <div id="panel-ranking">
+    <div class="result-meta" aria-live="polite">
+      <span id="result-label"></span>
+      <span><strong id="result-count"></strong>개 표시 중</span>
+    </div>
+    <ol class="rank-list" id="rank-list"></ol>
+  </div>
+
+</main>
+
+<footer class="site-footer">
+  <p>※ 구글 Places API 실연동 전 단계로, 현재 목업 데이터로 화면과 정렬 로직을 확인하는 프로토타입입니다.</p>
+</footer>
+
+<script src="../assets/js/matjip.js"></script>
+
+</body>
+</html>

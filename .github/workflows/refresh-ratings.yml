@@ -1,0 +1,35 @@
+name: 맛집 평점 매일 갱신
+
+on:
+  schedule:
+    # 매일 KST 03:00 (UTC 18:00, 전날) 실행 — 트래픽이 적은 새벽 시간대
+    - cron: "0 18 * * *"
+  workflow_dispatch: {} # 필요할 때 Actions 탭에서 수동 실행도 가능
+
+permissions:
+  contents: write
+
+jobs:
+  refresh:
+    runs-on: ubuntu-latest
+    steps:
+      - name: 저장소 체크아웃
+        uses: actions/checkout@v4
+
+      - name: Node.js 설정
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: 평점 조회 및 data/restaurants.json 갱신
+        env:
+          GOOGLE_MAPS_API_KEY: ${{ secrets.GOOGLE_MAPS_API_KEY }}
+        run: node scripts/fetch-ratings.mjs
+
+      - name: 변경 사항 커밋
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add data/restaurants.json
+          git diff --cached --quiet && echo "변경 없음 — 커밋 생략" || git commit -m "chore: 맛집 평점 자동 갱신"
+          git push

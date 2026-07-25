@@ -1,0 +1,25 @@
+{
+  "_readme": "각 항목의 placeId를 실제 구글 Place ID로 채워주세요. 이름/평점/리뷰수는 매일 자동으로 덮어써지므로 직접 수정할 필요 없습니다. Place ID 찾는 법: https://developers.google.com/maps/documentation/places/web-service/place-id 페이지의 'Place ID Finder' 사용.",
+  "restaurants": [
+    {
+      "placeId": "PLACE_ID_여기에_붙여넣기_1",
+      "region": "seoul-seongdong",
+      "category": "한식"
+    },
+    {
+      "placeId": "PLACE_ID_여기에_붙여넣기_2",
+      "region": "seoul-mapo",
+      "category": "일식"
+    },
+    {
+      "placeId": "PLACE_ID_여기에_붙여넣기_3",
+      "region": "seoul-gangnam",
+      "category": "이탈리안"
+    },
+    {
+      "placeId": "PLACE_ID_여기에_붙여넣기_4",
+      "region": "gyeonggi",
+      "category": "카페"
+    }
+  ]
+}

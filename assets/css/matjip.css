@@ -1,0 +1,313 @@
+@charset "utf-8";
+
+/* ============================================================
+   맛집 순위 (html/matjip.html) 전용 스타일
+   포트폴리오 본문(style.css)과 팔레트가 달라 파일을 분리한다.
+   ============================================================ */
+
+:root{
+  --bg: #EEF2F2;            /* D6DEE0을 옅게 희석한 페이지 배경 */
+  --paper: #FFFFFF;
+  --ink: #2F0D01;           /* 다크 브라운블랙 */
+  --ink-soft: #705B50;      /* ink에서 파생한 세컨더리 텍스트 — bg/paper/tint 위 모두 4.5:1 이상 */
+  --line: #DDE6E6;
+  --line-strong: #C7D4D4;
+  --tint: #D6DEE0;          /* 페일 블루 — 칩/보조 배경 */
+  --accent: #ED4D0C;        /* 비비드 오렌지 — 유일한 강조색 (면/아이콘용) */
+  --accent-deep: #C23C05;   /* 텍스트·텍스트배경으로 쓸 때의 오렌지 (AA 대비 확보) */
+  --accent-ink: #FFFFFF;
+  --radius: 14px;
+  --mono: "IBM Plex Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+  --sans: "Pretendard", -apple-system, BlinkMacSystemFont, "Malgun Gothic", sans-serif;
+}
+
+*{ box-sizing: border-box; }
+html,body{ margin:0; padding:0; }
+body{
+  background: var(--bg);
+  color: var(--ink);
+  font-family: var(--sans);
+  line-height: 1.5;
+  min-height: 100vh;
+}
+
+a.skip-link{
+  position:absolute; left:-9999px; top:0;
+  background: var(--ink); color:#fff; padding:10px 16px;
+  border-radius: 0 0 8px 0; z-index: 200; font-size:14px;
+}
+a.skip-link:focus{ left:0; }
+
+header.site-header{
+  padding: 28px 24px 18px;
+  max-width: 720px;
+  margin: 0 auto;
+}
+
+/* 포트폴리오 본문으로 돌아가는 링크 — 하위 페이지가 막다른 길이 되지 않게 */
+.back-link{
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 32px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--ink-soft);
+  text-decoration: none;
+  margin-bottom: 12px;
+}
+.back-link:hover,
+.back-link:focus-visible{
+  color: var(--ink);
+  text-decoration: underline;
+}
+.back-link:focus-visible{
+  outline: 2px solid var(--accent-deep);
+  outline-offset: 3px;
+  border-radius: 4px;
+}
+
+.brand-mark{
+  width: 28px; height: 6px;
+  background: var(--accent);
+  border-radius: 3px;
+  margin-bottom: 16px;
+}
+.eyebrow{
+  font-family: var(--mono);
+  font-size: 12px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--ink-soft);
+  margin: 0 0 10px;
+}
+h1{
+  font-size: clamp(26px, 4vw, 34px);
+  margin: 0 0 8px;
+  letter-spacing: -0.02em;
+  font-weight: 800;
+}
+.lede{
+  color: var(--ink-soft);
+  font-size: 15px;
+  margin: 0;
+  max-width: 46ch;
+}
+
+main{
+  max-width: 720px;
+  margin: 0 auto;
+  padding: 0 24px 80px;
+}
+
+/* ── 필터 바 (탭 + 지역칩) : 스크롤해도 항상 접근 가능 ── */
+.filter-bar{
+  position: sticky;
+  top: 0;
+  z-index: 20;
+  background: var(--bg);
+  padding-top: 14px;
+  margin-bottom: 18px;
+  border-bottom: 1px solid var(--line);
+}
+
+.service-note{
+  font-size: 13px;
+  color: var(--ink-soft);
+  background: var(--paper);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 10px 14px;
+  margin: 0 0 14px;
+}
+.service-note strong{ color: var(--ink); }
+
+/* ── 지역 셀렉트: 가로 스크롤 칩 ── */
+fieldset.region-select{
+  border: none;
+  margin: 0;
+  padding: 0 0 14px;
+}
+fieldset.region-select legend{
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--ink-soft);
+  margin-bottom: 10px;
+  padding: 0;
+}
+.region-chips{
+  display: flex;
+  flex-wrap: nowrap;
+  gap: 8px;
+  overflow-x: auto;
+  padding-bottom: 4px;
+  scrollbar-width: thin;
+  -webkit-overflow-scrolling: touch;
+}
+.region-chips label{
+  position: relative;
+  flex: 0 0 auto;
+}
+.region-chips input[type="radio"]{
+  position: absolute;
+  opacity: 0;
+  width: 100%; height: 100%;
+  margin: 0; cursor: pointer;
+}
+.region-chips span{
+  display: inline-flex;
+  align-items: center;
+  white-space: nowrap;
+  padding: 8px 16px;
+  min-height: 36px;
+  border: 1px solid var(--line-strong);
+  border-radius: 999px;
+  font-size: 14px;
+  color: var(--ink-soft);
+  background: var(--paper);
+  transition: background .12s ease, color .12s ease, border-color .12s ease;
+}
+.region-chips input[type="radio"]:checked + span{
+  background: var(--ink);
+  border-color: var(--ink);
+  color: #fff;
+}
+.region-chips input[type="radio"]:focus-visible + span{
+  outline: 2px solid var(--accent-deep);
+  outline-offset: 2px;
+}
+
+/* ── 결과 헤더 ─────────────────────────────────── */
+.result-meta{
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  margin: 0 0 14px;
+  font-size: 13px;
+  color: var(--ink-soft);
+}
+.result-meta strong{
+  font-family: var(--mono);
+  color: var(--ink);
+}
+
+/* ── 랭킹 리스트: 리더보드형 단일 카드 ────────── */
+ol.rank-list{
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  background: var(--paper);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  overflow: hidden;
+}
+li.rank-row{
+  display: grid;
+  grid-template-columns: 40px 1fr auto;
+  align-items: center;
+  gap: 12px;
+  padding: 13px 16px;
+  border-bottom: 1px solid var(--line);
+}
+li.rank-row:last-child{ border-bottom: none; }
+
+.rank-badge{
+  font-family: var(--mono);
+  font-size: 13px;
+  font-weight: 700;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 34px;
+  height: 34px;
+  padding: 0 4px;
+  border-radius: 10px;
+  color: var(--ink-soft);
+  background: var(--tint);
+}
+/* 1위: 솔리드 오렌지 / 2·3위: 오렌지 톤 — 순위 구간을 배지로만 가볍게 구분 */
+li.rank-row.tier-1 .rank-badge{
+  color: var(--accent-ink);
+  background: var(--accent-deep);
+}
+li.rank-row.tier-2 .rank-badge{
+  color: var(--accent-deep);
+  background: #FFF1E9;
+}
+
+.rank-body{
+  min-width: 0;
+}
+.rank-name{
+  font-size: 15px;
+  font-weight: 700;
+  margin: 0 0 4px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.rank-sub{
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 10px;
+  font-size: 12.5px;
+  color: var(--ink-soft);
+  align-items: center;
+}
+.tag{
+  font-size: 11.5px;
+  font-weight: 600;
+  padding: 2px 8px;
+  border-radius: 999px;
+}
+.tag.category{
+  background: var(--tint);
+  color: #3E5457;
+}
+
+.rank-metric{
+  text-align: right;
+  white-space: nowrap;
+}
+.metric-rating{
+  font-family: var(--mono);
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--ink);
+}
+.metric-rating.is-rating::before{
+  content: "★";
+  color: var(--accent);
+  margin-right: 3px;
+  font-size: 13px;
+}
+.metric-sub{
+  font-size: 11.5px;
+  color: var(--ink-soft);
+  margin-top: 2px;
+}
+
+/* ── 빈 결과 상태 ── */
+.empty-state{
+  padding: 40px 20px;
+  text-align: center;
+  color: var(--ink-soft);
+  font-size: 14px;
+}
+
+@media (max-width: 480px){
+  li.rank-row{ grid-template-columns: 34px 1fr auto; gap: 10px; padding: 11px 14px; }
+  .rank-name{ font-size: 14.5px; }
+}
+
+footer.site-footer{
+  max-width: 720px;
+  margin: 0 auto;
+  padding: 8px 24px 60px;
+  font-size: 12.5px;
+  color: var(--ink-soft);
+}
+
+@media (prefers-reduced-motion: reduce){
+  *{ transition: none !important; animation: none !important; }
+}
