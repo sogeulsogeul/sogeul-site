@@ -60,7 +60,7 @@ h1,h2,h3{
 .wrap{max-width:1100px; margin:0 auto; padding:0 24px;}
 
 /* 앵커 이동 시 스티키 헤더에 가려지지 않도록 */
-#about, #channels, #collab{scroll-margin-top:72px;}
+#about, #channels, #works, #collab{scroll-margin-top:72px;}
 
 /* ---- 상단 내비: 그레이지 + 하단 보더 ---- */
 .topbar{
@@ -171,6 +171,73 @@ h1,h2,h3{
 @media (max-width:560px){
   .row{grid-template-columns:40px 1fr 30px; gap:12px;}
   .row .handle{display:none;}
+}
+
+/* ---- 프로젝트: 카드 목록 ---- */
+.works{padding:88px 0; border-bottom:1px solid rgba(241,234,221,.35);}
+.works h2{font-size:clamp(1.7rem, 3.6vw, 2.4rem); margin-bottom:12px; color:var(--cream);}
+.works .lede{margin:0 0 34px; opacity:.85;}
+
+.work-list{
+  list-style:none; margin:0; padding:0;
+  display:grid; gap:20px; max-width:620px;
+}
+.work-list > li{display:grid;}
+
+.work-card{
+  display:grid; gap:16px;
+  padding:34px 32px; border-radius:16px;
+  border:1px solid rgba(241,234,221,.4);
+  background:rgba(241,234,221,.045);
+  text-decoration:none; color:var(--cream);
+  transition:border-color .18s ease, background .18s ease, transform .18s ease;
+}
+.work-card:hover{
+  border-color:var(--rose); background:rgba(241,234,221,.09);
+  transform:translateY(-3px);
+}
+.work-tag{
+  font-size:.78rem; letter-spacing:.1em; text-transform:uppercase;
+  font-weight:700; color:var(--rose);
+}
+.work-title{
+  font-family:"Paperozi",sans-serif; font-weight:900;
+  font-size:clamp(2rem, 7vw, 3.2rem); line-height:1.05; letter-spacing:-.02em;
+}
+.work-desc{max-width:42ch; font-size:clamp(.9rem, 1.7vw, 1rem); opacity:.88;}
+
+/* 컬러 도구이니 사이트 팔레트를 견본으로 보여준다 */
+.work-swatches{display:flex; gap:8px;}
+.work-swatches i{
+  width:34px; height:34px; border-radius:9px;
+  border:1px solid rgba(241,234,221,.3);
+}
+.work-swatches i:nth-child(1){background:var(--deep);}
+.work-swatches i:nth-child(2){background:var(--rose);}
+.work-swatches i:nth-child(3){background:var(--bg);}
+.work-swatches i:nth-child(4){background:var(--cream);}
+
+/* 맛집 순위 카드: 팔레트 대신 기능을 칩으로 보여준다 */
+.work-chips{display:flex; flex-wrap:wrap; gap:8px;}
+.work-chips i{
+  font-style:normal; font-size:.78rem; font-weight:600; letter-spacing:.01em;
+  padding:6px 12px; border-radius:999px;
+  border:1px solid rgba(241,234,221,.35);
+  background:rgba(241,234,221,.06);
+  color:var(--cream);
+}
+
+.work-meta{
+  display:flex; justify-content:space-between; align-items:center; gap:14px;
+  padding-top:16px; border-top:1px solid rgba(241,234,221,.28);
+}
+.work-url{font-size:.82rem; font-weight:600; opacity:.75; word-break:break-all;}
+.work-arrow{font-size:1.3rem; color:var(--rose); transition:transform .18s ease;}
+.work-card:hover .work-arrow{transform:translate(4px,-4px);}
+
+@media (max-width:560px){
+  .work-card{padding:26px 22px;}
+  .work-swatches i{width:28px; height:28px;}
 }
 
 /* ---- 협업: 그레이지 ---- */
