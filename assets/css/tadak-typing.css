@@ -54,6 +54,19 @@ ul{margin:0; padding:0; list-style:none;}
   max-width:520px;
   padding:28px 20px 0;
 }
+.back-link{
+  display:inline-flex;
+  align-items:center;
+  gap:6px;
+  min-height:44px;
+  margin-bottom:8px;
+  color:var(--muted);
+  font-size:13px;
+  font-weight:500;
+  text-decoration:none;
+}
+.back-link:hover{color:var(--ink); text-decoration:underline;}
+
 .brand{
   display:flex;
   align-items:baseline;
