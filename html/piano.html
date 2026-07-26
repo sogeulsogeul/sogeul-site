@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>피아노 — 소글</title>
+<link rel="preconnect" href="https://cdn.jsdelivr.net">
+<link rel="stylesheet" href="../assets/css/piano.css">
+</head>
+<body>
+
+<div class="stage">
+  <header class="top">
+    <a class="back-link" href="../index.html"><span aria-hidden="true">←</span> 소글 홈으로</a>
+    <h1 class="page-title">피아노</h1>
+    <div class="tabs" role="tablist" aria-label="모드 선택">
+      <button type="button" class="tab" id="tabFree" role="tab" aria-selected="true" aria-controls="panelFree">자유 연주</button>
+      <button type="button" class="tab" id="tabLearn" role="tab" aria-selected="false" aria-controls="panelLearn" tabindex="-1">배우기</button>
+    </div>
+  </header>
+
+  <main class="panels" id="main">
+
+    <!-- FREE PLAY -->
+    <section class="view visible" id="panelFree" role="tabpanel" aria-labelledby="tabFree">
+      <h2 class="visually-hidden">자유 연주</h2>
+      <div class="bar">
+        <div class="ctrl-group">
+          <button type="button" class="chip" id="octDown" aria-label="옥타브 낮추기">−</button>
+          <p class="octave-display">
+            <span class="visually-hidden">현재 옥타브</span>
+            <span id="octDisplay" aria-live="polite">4</span>
+          </p>
+          <button type="button" class="chip" id="octUp" aria-label="옥타브 높이기">+</button>
+        </div>
+        <label class="toggle" for="sustainToggle">
+          <input type="checkbox" id="sustainToggle">
+          <span class="dot" aria-hidden="true"></span>
+          <span class="toggle-label">서스테인</span>
+        </label>
+      </div>
+      <div class="piano-wrap">
+        <div class="piano" id="pianoFree"></div>
+      </div>
+    </section>
+
+    <!-- LEARN -->
+    <section class="view" id="panelLearn" role="tabpanel" aria-labelledby="tabLearn">
+      <h2 class="visually-hidden">배우기</h2>
+
+      <!-- 곡 선택 -->
+      <div class="view-inner visible" id="viewSelect">
+        <ul class="song-list" id="songList"></ul>
+      </div>
+
+      <!-- 연습 -->
+      <div class="view-inner" id="viewPractice">
+        <div class="practice-bar">
+          <button type="button" class="icon-btn" id="backToList" aria-label="곡 목록으로 돌아가기"><span aria-hidden="true">←</span></button>
+          <h3 class="practice-title" id="practiceTitle" tabindex="-1"></h3>
+          <div class="progress" id="progressBar" role="progressbar" aria-label="연습 진행률"
+               aria-valuemin="0" aria-valuemax="100" aria-valuenow="0">
+            <div class="progress-fill" id="progressFill"></div>
+          </div>
+          <div class="mode-toggle" role="group" aria-label="연습 방식">
+            <button type="button" class="mode-btn" id="modePractice" aria-pressed="true">연습</button>
+            <button type="button" class="mode-btn" id="modeDemo" aria-pressed="false">듣기</button>
+          </div>
+          <button type="button" class="icon-btn" id="restartSong" aria-label="처음부터 다시"><span aria-hidden="true">⟲</span></button>
+        </div>
+        <p class="practice-hint" id="practiceHint" aria-live="polite"></p>
+        <div class="piano-wrap">
+          <div class="piano" id="pianoLearn"></div>
+        </div>
+      </div>
+    </section>
+
+  </main>
+</div>
+
+<script src="../assets/js/piano.js"></script>
+</body>
+</html>

@@ -1,0 +1,42 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(git add *)",
+      "Bash(git ls-tree *)",
+      "Bash(awk '{ if \\(length\\($0\\) > 300\\) printf \"%d\\\\t[LONG LINE %d chars] %s...\\\\n\", NR, length\\($0\\), substr\\($0,1,200\\); else printf \"%d\\\\t%s\\\\n\", NR, $0 }' index.html)",
+      "WebFetch(domain:sogeulsogeul.github.io)",
+      "Bash(npx --no-install playwright --version)",
+      "Read(//Users/ssomi/Library/Caches/**)",
+      "Read(//Applications/Google Chrome.app/Contents/MacOS/**)",
+      "Bash(lsof -nP -iTCP:8765 -sTCP:LISTEN)",
+      "Bash(curl -s http://127.0.0.1:8765/index.html)",
+      "Bash(\"/Applications/Google Chrome.app/Contents/MacOS/Google Chrome\" --headless --disable-gpu --hide-scrollbars --window-size=1280,3400 --screenshot=full-desktop.png --virtual-time-budget=4000 http://127.0.0.1:8765/index.html)",
+      "Bash(python3 -c \"import PIL; print\\(PIL.__version__\\)\")",
+      "Bash(sips -g pixelHeight -g pixelWidth full-desktop.png)",
+      "Bash(git remote *)",
+      "Read(//Users/ssomi/Desktop/work/sogeul/**)",
+      "Bash(cd /Users/ssomi/Desktop/work/sogeul && ls -laR tonfit | head -50 && echo \"=== sogeul-site tree ===\" && ls -laR sogeul-site/assets sogeul-site/html)",
+      "Read(//Users/ssomi/Desktop/work/**)",
+      "Bash(gh repo *)",
+      "Read(//Users/ssomi/Desktop/**)",
+      "Read(//Users/ssomi/Downloads/files/**)",
+      "Bash(cat /Users/ssomi/Desktop/work/sogeul/sogeul-site/.claude/skills/semantic-a11y-review/SKILL.md 2>/dev/null || find /Users/ssomi/Desktop/work/sogeul -name \"SKILL.md\" -path \"*semantic*\")",
+      "Bash(find /Users/ssomi/Desktop/work/sogeul -name \"SKILL.md\" 2>/dev/null; ls -R /Users/ssomi/Desktop/work/sogeul/sogeul-site/.claude)",
+      "Read(//Users/ssomi/Desktop/work/sogeul/.claude/skills/semantic-a11y-review/**)",
+      "Bash(gh auth *)",
+      "Bash(cat /Users/ssomi/Downloads/files/matjip-site/.github/workflows/refresh-ratings.yml)",
+      "Read(//Users/ssomi/Downloads/files/matjip-site/.github/workflows/**)",
+      "Bash(gh api *)",
+      "Bash(ssh -T git@github-sogeul)",
+      "Read(//Users/ssomi/.ssh/**)",
+      "Read(//Users/ssomi/Desktop/work/sogeul/matjip/**)",
+      "Bash(python3 -)",
+      "Bash(rm -rf /Users/ssomi/Desktop/work/sogeul/matjip)",
+      "Bash(git -c user.name=sogeul -c user.email=sogeulsogeul@gmail.com commit -q -m ' *)",
+      "Bash(git push *)"
+    ],
+    "additionalDirectories": [
+      "/Users/ssomi/Desktop/work/sogeul/matjip"
+    ]
+  }
+}
