@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>타닥 — 타자 속도 측정</title>
+<link rel="preconnect" href="https://cdn.jsdelivr.net">
+<link rel="stylesheet" href="../assets/css/tadak-typing.css">
+</head>
+<body>
+<div class="wrap">
+  <header class="brand">
+    <h1 class="mark">타닥<span class="dot" aria-hidden="true">.</span></h1>
+    <p class="tag">타자 속도 측정</p>
+  </header>
+
+  <main id="main">
+    <!-- HOME -->
+    <section class="screen active" id="screen-home" aria-labelledby="homeTitle">
+      <h2 class="home-title" id="homeTitle" tabindex="-1">오늘 내 타자,<br>얼마나 빠를까?</h2>
+      <p class="home-sub">글을 골라 입력하면 끝나는 순간<br>속도와 정확도를 알려드려요.</p>
+      <ul class="level-list">
+        <li>
+          <button type="button" class="level-card" data-level="short">
+            <span class="level-text">
+              <span class="name">짧은 글</span>
+              <span class="desc">50자 내외 · 워밍업용</span>
+            </span>
+            <span class="chev" aria-hidden="true">→</span>
+          </button>
+        </li>
+        <li>
+          <button type="button" class="level-card" data-level="medium">
+            <span class="level-text">
+              <span class="name">보통 글</span>
+              <span class="desc">150자 내외 · 기본 측정</span>
+            </span>
+            <span class="chev" aria-hidden="true">→</span>
+          </button>
+        </li>
+        <li>
+          <button type="button" class="level-card" data-level="long">
+            <span class="level-text">
+              <span class="name">긴 글</span>
+              <span class="desc">300자 내외 · 지구력 테스트</span>
+            </span>
+            <span class="chev" aria-hidden="true">→</span>
+          </button>
+        </li>
+      </ul>
+    </section>
+
+    <!-- TYPING -->
+    <section class="screen" id="screen-type" aria-labelledby="typeTitle">
+      <h2 class="visually-hidden" id="typeTitle" tabindex="-1">타자 입력</h2>
+      <div class="top-bar">
+        <p class="stat-pill">
+          <span>시간 <b id="liveTime">00:00</b></span>
+          <span>정확도 <b id="liveAcc">100%</b></span>
+        </p>
+        <button type="button" class="exit-btn" id="exitBtn">그만하기</button>
+      </div>
+      <div class="progress-track" id="progressBar" role="progressbar"
+           aria-label="입력 진행률" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0">
+        <div class="progress-fill" id="progressFill"></div>
+      </div>
+      <p class="passage" id="passageDisplay"></p>
+      <label class="visually-hidden" for="typer">위 문장을 그대로 입력하세요</label>
+      <textarea id="typer" aria-describedby="passageDisplay" placeholder="여기를 눌러 입력을 시작하세요" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" inputmode="text"></textarea>
+      <button type="button" class="btn btn-primary btn-block" id="submitBtn">제출하기</button>
+    </section>
+
+    <!-- RESULT -->
+    <section class="screen" id="screen-result" aria-labelledby="resultTitle">
+      <h2 class="result-eyebrow" id="resultTitle" tabindex="-1">측정 완료</h2>
+      <p class="result-hero"><span class="num" id="resultSpeed">0</span><span class="unit">타/분</span></p>
+      <dl class="result-grid">
+        <div class="result-card"><dt class="label">소요 시간</dt><dd class="value" id="resultTime">00:00</dd></div>
+        <div class="result-card"><dt class="label">정확도</dt><dd class="value" id="resultAcc">100%</dd></div>
+        <div class="result-card"><dt class="label">입력 글자 수</dt><dd class="value" id="resultChars">0자</dd></div>
+        <div class="result-card"><dt class="label">틀린 글자 <span class="label-note">(미입력 포함)</span></dt><dd class="value" id="resultErrors">0개</dd></div>
+      </dl>
+      <button type="button" class="btn-card" id="makeCardBtn"><span aria-hidden="true">📸</span> 인스타 카드 만들기</button>
+      <div class="result-actions">
+        <button type="button" class="btn btn-secondary" id="retryBtn">같은 글 다시</button>
+        <button type="button" class="btn btn-primary" id="homeBtn">새 글 하기</button>
+      </div>
+    </section>
+  </main>
+</div>
+
+<div class="card-overlay" id="cardOverlay" role="dialog" aria-modal="true" aria-labelledby="cardDialogTitle">
+  <h2 class="visually-hidden" id="cardDialogTitle">리포트 카드 공유</h2>
+  <img id="cardImage" alt="">
+  <div class="card-actions">
+    <button type="button" class="btn btn-secondary" id="cardCloseBtn">닫기</button>
+    <button type="button" class="btn btn-primary" id="cardShareBtn">공유하기</button>
+  </div>
+  <p class="card-hint">공유가 안 되면 이미지를 길게 눌러 저장하세요</p>
+</div>
+
+<script src="../assets/js/tadak-typing.js"></script>
+</body>
+</html>
