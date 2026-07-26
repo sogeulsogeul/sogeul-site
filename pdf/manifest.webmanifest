@@ -1,0 +1,40 @@
+{
+  "name": "로컬 PDF 변환기",
+  "short_name": "PDF 변환기",
+  "description": "PDF를 이미지·Excel·텍스트로 바꾸고 페이지를 분할합니다. 모든 처리는 기기 안에서만 일어납니다.",
+  "lang": "ko",
+  "dir": "ltr",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#F4F5F7",
+  "theme_color": "#2540E8",
+  "categories": ["productivity", "utilities"],
+  "icons": [
+    {
+      "src": "./assets/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "./assets/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "./assets/icon-maskable-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    },
+    {
+      "src": "./assets/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    }
+  ]
+}

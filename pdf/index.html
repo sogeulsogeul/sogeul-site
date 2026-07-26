@@ -1,0 +1,1802 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>로컬 PDF 변환기</title>
+<meta name="description" content="PDF를 이미지·Excel·텍스트로 바꾸고 페이지를 분할합니다. 모든 처리는 브라우저 안에서만 일어나고 파일은 어디에도 업로드되지 않습니다.">
+<meta name="theme-color" content="#2540E8">
+<link rel="manifest" href="./manifest.webmanifest">
+<link rel="icon" href="./assets/icon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="./assets/icon-192.png">
+<style>
+/* ============================================================
+   로컬 PDF 변환기 — 정밀한 작업 도구 톤
+   쿨 오프화이트 지면 / 그래파이트 잉크 / 코발트 단일 강조색
+   ============================================================ */
+
+:root{
+  --paper:      #F4F5F7;
+  --surface:    #FFFFFF;
+  --ink:        #1D2126;   /* 지면 대비 15:1 이상 */
+  --ink-muted:  #5C6470;   /* 지면 대비 5.48:1 */
+  --cobalt:     #2540E8;   /* 지면 대비 6.47:1, 흰 글자 7.05:1 */
+  --cobalt-wash:#EDF0FE;
+  --hairline:   #E1E4EA;
+  --hairline-2: #CDD2DB;
+  --danger:     #B3261E;   /* 지면 대비 5.9:1 */
+  --ok:         #10693F;   /* 지면 대비 5.5:1 */
+
+  /* 여백: 8px 배수 */
+  --s1: 8px; --s2: 16px; --s3: 24px; --s4: 32px; --s5: 40px; --s6: 48px; --s8: 64px;
+
+  --r: 10px;
+  --mono: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, "Liberation Mono", monospace;
+  --sans: -apple-system, BlinkMacSystemFont, "Pretendard", "Apple SD Gothic Neo",
+          "Malgun Gothic", "Segoe UI", Roboto, sans-serif;
+}
+
+*{ box-sizing: border-box; }
+[hidden]{ display: none !important; }
+
+html{ background: var(--paper); }
+body{
+  margin: 0;
+  min-height: 100vh;
+  background: var(--paper);
+  color: var(--ink);
+  font-family: var(--sans);
+  font-size: 15px;
+  line-height: 1.6;
+  -webkit-text-size-adjust: 100%;
+}
+
+:focus-visible{
+  outline: 3px solid var(--cobalt);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+.visually-hidden{
+  position: absolute !important;
+  width: 1px; height: 1px; margin: -1px; padding: 0;
+  overflow: hidden; clip: rect(0 0 0 0); clip-path: inset(50%);
+  white-space: nowrap; border: 0;
+}
+
+.skip-link{
+  position: absolute; left: -9999px; top: 0; z-index: 300;
+  padding: var(--s1) var(--s2);
+  background: var(--ink); color: #fff; font-weight: 700; text-decoration: none;
+}
+.skip-link:focus{ left: 0; }
+
+.wrap{
+  width: 100%;
+  max-width: 940px;
+  margin: 0 auto;
+  padding: 0 var(--s3);
+}
+
+/* ---- 헤더 ---- */
+.site-head{
+  border-bottom: 1px solid var(--hairline);
+  background: var(--surface);
+  padding: var(--s3) 0;
+}
+.head-row{
+  display: flex; align-items: center; justify-content: space-between;
+  flex-wrap: wrap; gap: var(--s2);
+}
+.logo{ display: flex; align-items: center; gap: var(--s2); }
+.logo-mark{
+  width: 38px; height: 38px; flex: 0 0 auto;
+  border-radius: 9px; background: var(--cobalt);
+  display: grid; place-items: center;
+}
+.logo-mark svg{ width: 21px; height: 21px; }
+h1{
+  margin: 0;
+  font-size: 19px; font-weight: 700; letter-spacing: -0.01em;
+}
+.logo-sub{
+  margin: 0; font-family: var(--mono);
+  font-size: 11px; letter-spacing: 0.06em; text-transform: uppercase;
+  color: var(--ink-muted);
+}
+.local-badge{
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 6px 12px;
+  border: 1px solid var(--hairline-2); border-radius: 999px;
+  background: var(--paper);
+  font-family: var(--mono); font-size: 11.5px; font-weight: 600;
+  color: var(--ink);
+}
+.local-badge .dot{
+  width: 7px; height: 7px; border-radius: 50%;
+  background: var(--ok); flex: 0 0 auto;
+}
+
+main{ padding: var(--s5) 0 var(--s8); }
+
+/* ---- 섹션 공통 ---- */
+.block{ margin-bottom: var(--s5); }
+.block-head{ margin-bottom: var(--s2); }
+.block-title{
+  margin: 0 0 4px;
+  font-family: var(--mono);
+  font-size: 11.5px; font-weight: 700;
+  letter-spacing: 0.1em; text-transform: uppercase;
+  color: var(--ink-muted);
+}
+.block-desc{ margin: 0; font-size: 13.5px; color: var(--ink-muted); }
+
+.panel{
+  background: var(--surface);
+  border: 1px solid var(--hairline);
+  border-radius: var(--r);
+  padding: var(--s3);
+}
+
+/* ---- 드롭존 ---- */
+.dropzone{
+  display: grid; place-items: center; gap: var(--s2);
+  padding: var(--s6) var(--s3);
+  border: 2px dashed var(--hairline-2);
+  border-radius: var(--r);
+  background: var(--surface);
+  text-align: center;
+  cursor: pointer;
+  transition: border-color .15s ease, background .15s ease;
+}
+.dropzone:hover{ border-color: var(--cobalt); }
+.dropzone.is-over{
+  border-color: var(--cobalt);
+  background: var(--cobalt-wash);
+}
+/* 파일 input은 화면에서 숨기지만 포커스는 살아 있다 — 링을 존에 그려준다 */
+.dropzone:focus-within{
+  outline: 3px solid var(--cobalt);
+  outline-offset: 2px;
+}
+.dz-icon{
+  width: 48px; height: 48px;
+  display: grid; place-items: center;
+  border: 1px solid var(--hairline-2); border-radius: 12px;
+  background: var(--paper);
+}
+.dz-icon svg{ width: 24px; height: 24px; }
+.dz-title{ margin: 0; font-size: 16px; font-weight: 700; }
+.dz-sub{ margin: 0; font-size: 13px; color: var(--ink-muted); }
+.dz-sub b{ color: var(--cobalt); }
+
+/* ---- 파일 정보 카드 ---- */
+.fileinfo{
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+  gap: 1px;
+  background: var(--hairline);
+  border: 1px solid var(--hairline);
+  border-radius: var(--r);
+  overflow: hidden;
+  margin-bottom: var(--s2);
+}
+.fi-cell{ background: var(--surface); padding: var(--s2); min-width: 0; }
+.fi-k{
+  margin: 0 0 2px;
+  font-family: var(--mono); font-size: 10.5px;
+  letter-spacing: 0.08em; text-transform: uppercase; color: var(--ink-muted);
+}
+.fi-v{
+  margin: 0; font-family: var(--mono); font-size: 15px; font-weight: 600;
+  overflow-wrap: anywhere;
+}
+.fi-v.is-name{ font-family: var(--sans); font-size: 14px; }
+
+/* ---- 안내 배너 ---- */
+.note{
+  display: flex; gap: var(--s2); align-items: flex-start;
+  padding: var(--s2);
+  border: 1px solid var(--hairline-2);
+  border-left: 3px solid var(--cobalt);
+  border-radius: 0 var(--r) var(--r) 0;
+  background: var(--surface);
+  font-size: 13.5px;
+  margin-bottom: var(--s2);
+}
+.note.warn{ border-left-color: var(--danger); }
+.note .note-tag{
+  flex: 0 0 auto;
+  font-family: var(--mono); font-size: 10.5px; font-weight: 700;
+  letter-spacing: 0.08em; text-transform: uppercase;
+  padding: 2px 8px; border-radius: 999px;
+  background: var(--cobalt-wash); color: var(--cobalt);
+}
+.note.warn .note-tag{ background: #FBEAE9; color: var(--danger); }
+.note p{ margin: 0; }
+.note code{
+  font-family: var(--mono); font-size: 12.5px;
+  padding: 1px 5px; border-radius: 4px; background: var(--paper);
+}
+
+/* ---- 모드 탭 ---- */
+.tabs{
+  display: flex; flex-wrap: wrap; gap: var(--s1);
+  border-bottom: 1px solid var(--hairline);
+  padding-bottom: var(--s2);
+  margin-bottom: var(--s3);
+}
+.tab{
+  display: inline-flex; align-items: center; gap: var(--s1);
+  min-height: 44px; padding: 0 var(--s2);
+  border: 1px solid var(--hairline-2); border-radius: 999px;
+  background: var(--surface);
+  color: var(--ink);
+  font-family: var(--sans); font-size: 14px; font-weight: 600;
+  cursor: pointer;
+}
+.tab:hover{ border-color: var(--cobalt); }
+.tab[aria-selected="true"]{
+  background: var(--cobalt);
+  border-color: var(--cobalt);
+  color: #fff;
+}
+.tab .tab-no{
+  font-family: var(--mono); font-size: 11px; opacity: .7;
+}
+.tab[disabled]{ opacity: .5; cursor: not-allowed; }
+
+/* ---- 옵션 폼 ---- */
+.opt-grid{
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: var(--s3);
+  margin-bottom: var(--s3);
+}
+fieldset{ margin: 0; padding: 0; border: none; min-width: 0; }
+legend, .opt-label{
+  padding: 0;
+  margin-bottom: var(--s1);
+  font-family: var(--mono); font-size: 11px; font-weight: 700;
+  letter-spacing: 0.08em; text-transform: uppercase; color: var(--ink-muted);
+}
+.seg{ display: flex; flex-wrap: wrap; gap: 6px; }
+.seg-item{ position: relative; display: inline-flex; }
+.seg-item input{
+  position: absolute; inset: 0; width: 100%; height: 100%;
+  margin: 0; opacity: 0; cursor: pointer;
+}
+.seg-item span{
+  display: inline-flex; align-items: center; gap: 5px;
+  min-height: 40px; padding: 0 14px;
+  border: 1px solid var(--hairline-2); border-radius: 8px;
+  background: var(--surface);
+  font-family: var(--mono); font-size: 13px; font-weight: 600;
+}
+.seg-item input:checked + span{
+  background: var(--cobalt); border-color: var(--cobalt); color: #fff;
+}
+/* 색만으로 선택을 알리지 않도록 체크 기호를 함께 넣는다 */
+.seg-item input:checked + span::before{ content: "✓"; font-size: 12px; }
+.seg-item input:focus-visible + span{ outline: 3px solid var(--cobalt); outline-offset: 2px; }
+.seg-item input:disabled + span{ opacity: .45; }
+
+input[type="text"]{
+  width: 100%; min-height: 44px; padding: 0 12px;
+  border: 1px solid var(--hairline-2); border-radius: 8px;
+  background: var(--surface); color: var(--ink);
+  font-family: var(--mono); font-size: 16px;
+}
+input[type="text"]:focus-visible{ border-color: var(--cobalt); }
+.opt-hint{ margin: 6px 0 0; font-size: 12.5px; color: var(--ink-muted); }
+
+/* ---- 버튼 ---- */
+.btn{
+  display: inline-flex; align-items: center; justify-content: center; gap: var(--s1);
+  min-height: 48px; padding: 0 var(--s3);
+  border: 1px solid var(--cobalt); border-radius: 8px;
+  background: var(--cobalt); color: #fff;
+  font-family: var(--sans); font-size: 15px; font-weight: 700;
+  cursor: pointer;
+}
+.btn:hover{ background: #1C33C4; border-color: #1C33C4; }
+.btn.secondary{
+  background: var(--surface); color: var(--ink); border-color: var(--hairline-2);
+}
+.btn.secondary:hover{ border-color: var(--cobalt); background: var(--paper); }
+.btn.sm{ min-height: 40px; padding: 0 var(--s2); font-size: 13.5px; }
+.btn[disabled]{ opacity: .5; cursor: not-allowed; }
+.btn-row{ display: flex; flex-wrap: wrap; gap: var(--s1); align-items: center; }
+
+/* ---- 진행바 ---- */
+.progress-box{
+  margin-top: var(--s3);
+  padding: var(--s2);
+  border: 1px solid var(--hairline); border-radius: var(--r);
+  background: var(--surface);
+}
+.progress-head{
+  display: flex; justify-content: space-between; gap: var(--s2);
+  font-family: var(--mono); font-size: 12px; margin-bottom: var(--s1);
+}
+progress{
+  appearance: none; -webkit-appearance: none;
+  display: block; width: 100%; height: 8px; border: none;
+  background: var(--hairline); border-radius: 999px; overflow: hidden;
+}
+progress::-webkit-progress-bar{ background: var(--hairline); border-radius: 999px; }
+progress::-webkit-progress-value{ background: var(--cobalt); border-radius: 999px; }
+progress::-moz-progress-bar{ background: var(--cobalt); border-radius: 999px; }
+
+/* ---- 결과 ---- */
+.results{ margin-top: var(--s4); }
+.result-head{
+  display: flex; align-items: baseline; justify-content: space-between;
+  flex-wrap: wrap; gap: var(--s2); margin-bottom: var(--s2);
+}
+.result-title{ margin: 0; font-size: 16px; font-weight: 700; }
+.result-meta{ margin: 0; font-family: var(--mono); font-size: 12px; color: var(--ink-muted); }
+
+/* 썸네일 그리드 */
+.thumbs{
+  list-style: none; margin: 0; padding: 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(128px, 1fr));
+  gap: var(--s2);
+}
+.thumb-btn{
+  display: grid; gap: 6px; width: 100%; padding: var(--s1);
+  border: 1px solid var(--hairline); border-radius: 8px;
+  background: var(--surface); color: var(--ink);
+  cursor: pointer; text-align: left;
+}
+.thumb-btn:hover{ border-color: var(--cobalt); }
+.thumb-btn img{
+  display: block; width: 100%; height: auto;
+  border: 1px solid var(--hairline); border-radius: 4px; background: #fff;
+}
+.thumb-cap{
+  display: flex; justify-content: space-between; gap: 6px;
+  font-family: var(--mono); font-size: 11px; color: var(--ink-muted);
+}
+.thumb-cap .pg{ color: var(--ink); font-weight: 700; }
+.thumb-btn.failed{ border-color: var(--danger); }
+.thumb-fail{
+  display: grid; place-items: center; aspect-ratio: 3/4;
+  background: var(--paper); border: 1px solid var(--hairline); border-radius: 4px;
+  font-size: 12px; color: var(--danger); text-align: center; padding: var(--s1);
+}
+
+/* 표 미리보기 */
+.table-scroll{
+  overflow-x: auto;
+  border: 1px solid var(--hairline); border-radius: var(--r);
+  background: var(--surface);
+}
+table{ border-collapse: collapse; width: 100%; font-size: 13px; }
+caption{
+  text-align: left; padding: var(--s2);
+  font-family: var(--mono); font-size: 11.5px; color: var(--ink-muted);
+  border-bottom: 1px solid var(--hairline);
+}
+th, td{
+  border-right: 1px solid var(--hairline);
+  border-bottom: 1px solid var(--hairline);
+  padding: 8px 10px;
+  text-align: left;
+  vertical-align: top;
+  max-width: 260px;
+  overflow-wrap: anywhere;
+}
+th{
+  background: var(--paper);
+  font-family: var(--mono); font-size: 11px; font-weight: 700;
+  letter-spacing: .04em; white-space: nowrap;
+  position: sticky; top: 0;
+}
+tr:last-child td{ border-bottom: none; }
+th:last-child, td:last-child{ border-right: none; }
+
+/* 텍스트 미리보기 */
+.text-pre{
+  margin: 0;
+  max-height: 420px; overflow: auto;
+  padding: var(--s2);
+  border: 1px solid var(--hairline); border-radius: var(--r);
+  background: var(--surface);
+  font-family: var(--mono); font-size: 12.5px; line-height: 1.7;
+  white-space: pre-wrap; overflow-wrap: anywhere;
+}
+
+.log{
+  margin: var(--s2) 0 0; padding: 0; list-style: none;
+  font-family: var(--mono); font-size: 12px; color: var(--ink-muted);
+}
+.log li{ padding: 2px 0; }
+.log li.err{ color: var(--danger); }
+
+.site-foot{
+  border-top: 1px solid var(--hairline);
+  padding: var(--s3) 0 var(--s5);
+  font-size: 12.5px; color: var(--ink-muted);
+}
+.site-foot p{ margin: 0 0 6px; }
+.site-foot a{ color: var(--cobalt); }
+
+@media (max-width: 640px){
+  .wrap{ padding: 0 var(--s2); }
+  .dropzone{ padding: var(--s4) var(--s2); }
+  .opt-grid{ grid-template-columns: 1fr; gap: var(--s2); }
+}
+
+@media (prefers-reduced-motion: reduce){
+  *{ animation-duration: .001ms !important; transition-duration: .001ms !important; }
+}
+</style>
+</head>
+<body>
+
+<a class="skip-link" href="#main">본문 바로가기</a>
+
+<header class="site-head">
+  <div class="wrap head-row">
+    <div class="logo">
+      <span class="logo-mark" aria-hidden="true">
+        <svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M13.5 2.5H6.5a1.5 1.5 0 0 0-1.5 1.5v16a1.5 1.5 0 0 0 1.5 1.5h11a1.5 1.5 0 0 0 1.5-1.5V8z"/>
+          <path d="M13.5 2.5V8H19"/>
+          <path d="M12 11.5v5.5"/><path d="M9.5 14.5 12 17l2.5-2.5"/>
+        </svg>
+      </span>
+      <div>
+        <h1>로컬 PDF 변환기</h1>
+        <p class="logo-sub">Local-only PDF toolkit</p>
+      </div>
+    </div>
+    <p class="local-badge"><span class="dot" aria-hidden="true"></span>업로드 없음 · 기기 안에서만 처리</p>
+  </div>
+</header>
+
+<main id="main" class="wrap" tabindex="-1">
+
+  <!-- ── 1. 파일 선택 ─────────────────────────────── -->
+  <section class="block" aria-labelledby="pick-h">
+    <div class="block-head">
+      <h2 class="block-title" id="pick-h">01 — 파일</h2>
+      <p class="block-desc">PDF 하나를 놓거나 선택하세요. 파일은 브라우저 메모리에만 올라가고 어디로도 전송되지 않습니다.</p>
+    </div>
+
+    <div class="dropzone" id="dropzone">
+      <span class="dz-icon" aria-hidden="true">
+        <svg viewBox="0 0 24 24" fill="none" stroke="#2540E8" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M12 16V4"/><path d="m7.5 8.5 4.5-4.5 4.5 4.5"/>
+          <path d="M4 15v3.5A1.5 1.5 0 0 0 5.5 20h13a1.5 1.5 0 0 0 1.5-1.5V15"/>
+        </svg>
+      </span>
+      <p class="dz-title">여기에 PDF를 끌어다 놓기</p>
+      <p class="dz-sub">또는 <b>클릭해서 파일 선택</b> · PDF 형식만 가능</p>
+      <label class="visually-hidden" for="file-input">PDF 파일 선택</label>
+      <input class="visually-hidden" type="file" id="file-input" accept="application/pdf,.pdf">
+    </div>
+
+    <p class="note warn" id="load-error" role="alert" hidden>
+      <span class="note-tag">오류</span>
+      <span id="load-error-text"></span>
+    </p>
+
+    <div id="file-meta" hidden>
+      <div class="fileinfo" style="margin-top:16px">
+        <div class="fi-cell">
+          <p class="fi-k">파일명</p>
+          <p class="fi-v is-name" id="fi-name">—</p>
+        </div>
+        <div class="fi-cell">
+          <p class="fi-k">크기</p>
+          <p class="fi-v" id="fi-size">—</p>
+        </div>
+        <div class="fi-cell">
+          <p class="fi-k">페이지</p>
+          <p class="fi-v" id="fi-pages">—</p>
+        </div>
+        <div class="fi-cell">
+          <p class="fi-k">텍스트 레이어</p>
+          <p class="fi-v" id="fi-text">—</p>
+        </div>
+      </div>
+
+      <p class="note warn" id="scan-note" hidden>
+        <span class="note-tag">스캔 PDF</span>
+        <span>이 문서에는 <b>글자 정보가 없습니다.</b> 스캔·사진으로 만들어진 PDF로 보입니다.
+        Excel·텍스트 추출은 글자 좌표를 읽어야 해서 결과가 비어 있게 됩니다.
+        문자를 얻으려면 <b>OCR(광학 문자 인식)</b>을 먼저 거쳐야 하고, 이 도구에는 OCR 기능이 없습니다.
+        지금은 <b>이미지 변환</b>이나 <b>PDF 분할</b>을 쓰시길 권합니다.</span>
+      </p>
+
+      <p class="note" id="big-note" hidden>
+        <span class="note-tag">큰 파일</span>
+        <span><b id="big-reason"></b> 모바일에서는 메모리가 모자라 중간에 멈출 수 있습니다.
+        <b>해상도는 표준(1.5x)</b>으로 두고, 페이지 범위를 <code>1-20</code>, <code>21-40</code>처럼
+        나눠서 여러 번 실행하시면 안정적입니다.</span>
+      </p>
+    </div>
+  </section>
+
+  <!-- ── 2. 모드 + 옵션 ───────────────────────────── -->
+  <section class="block" aria-labelledby="mode-h">
+    <div class="block-head">
+      <h2 class="block-title" id="mode-h">02 — 변환 방식</h2>
+    </div>
+
+    <div class="tabs" role="tablist" aria-label="변환 방식 선택">
+      <button class="tab" type="button" role="tab" id="tab-image" aria-controls="panel-image" aria-selected="true">
+        <span class="tab-no" aria-hidden="true">01</span> 이미지
+      </button>
+      <button class="tab" type="button" role="tab" id="tab-excel" aria-controls="panel-excel" aria-selected="false" tabindex="-1">
+        <span class="tab-no" aria-hidden="true">02</span> Excel
+      </button>
+      <button class="tab" type="button" role="tab" id="tab-text" aria-controls="panel-text" aria-selected="false" tabindex="-1">
+        <span class="tab-no" aria-hidden="true">03</span> 텍스트
+      </button>
+      <button class="tab" type="button" role="tab" id="tab-split" aria-controls="panel-split" aria-selected="false" tabindex="-1">
+        <span class="tab-no" aria-hidden="true">04</span> PDF 분할
+      </button>
+    </div>
+
+    <!-- 이미지 -->
+    <div class="panel" role="tabpanel" id="panel-image" aria-labelledby="tab-image" tabindex="0">
+      <div class="opt-grid">
+        <fieldset>
+          <legend>이미지 형식</legend>
+          <div class="seg">
+            <label class="seg-item"><input type="radio" name="img-format" value="jpg" checked><span>JPG</span></label>
+            <label class="seg-item"><input type="radio" name="img-format" value="png"><span>PNG</span></label>
+          </div>
+          <p class="opt-hint">JPG는 용량이 작고, PNG는 글자가 더 또렷합니다.</p>
+        </fieldset>
+
+        <fieldset>
+          <legend>해상도</legend>
+          <div class="seg">
+            <label class="seg-item"><input type="radio" name="img-scale" value="1.5" checked><span>1.5x 표준</span></label>
+            <label class="seg-item"><input type="radio" name="img-scale" value="2"><span>2x 선명</span></label>
+            <label class="seg-item"><input type="radio" name="img-scale" value="3"><span>3x 최대</span></label>
+          </div>
+          <p class="opt-hint">기기 한계를 넘으면 페이지별로 자동 축소합니다.</p>
+        </fieldset>
+
+        <div>
+          <p class="opt-label" id="lbl-img-range">페이지 범위</p>
+          <input type="text" id="img-range" inputmode="numeric"
+                 placeholder="비우면 전체" aria-labelledby="lbl-img-range" aria-describedby="hint-img-range">
+          <p class="opt-hint" id="hint-img-range">예: <code>1-5</code>, <code>2,4,7</code>, <code>1-3,10</code></p>
+        </div>
+      </div>
+      <div class="btn-row">
+        <button class="btn" type="button" data-run="image" disabled>이미지로 변환</button>
+      </div>
+    </div>
+
+    <!-- Excel -->
+    <div class="panel" role="tabpanel" id="panel-excel" aria-labelledby="tab-excel" tabindex="0" hidden>
+      <div class="opt-grid">
+        <fieldset>
+          <legend>시트 구성</legend>
+          <div class="seg">
+            <label class="seg-item"><input type="radio" name="xl-sheet" value="per-page" checked><span>페이지별 시트</span></label>
+            <label class="seg-item"><input type="radio" name="xl-sheet" value="merge"><span>한 시트로 합치기</span></label>
+          </div>
+        </fieldset>
+
+        <div>
+          <p class="opt-label" id="lbl-xl-range">페이지 범위</p>
+          <input type="text" id="xl-range" inputmode="numeric"
+                 placeholder="비우면 전체" aria-labelledby="lbl-xl-range" aria-describedby="hint-xl-range">
+          <p class="opt-hint" id="hint-xl-range">예: <code>1-5</code>, <code>2,4,7</code></p>
+        </div>
+      </div>
+
+      <p class="note">
+        <span class="note-tag">참고</span>
+        <span>글자의 x·y 좌표를 읽어 행과 열을 <b>추정</b>합니다. 표 선을 인식하는 게 아니라서
+        칸 병합이 많거나 여백이 불규칙한 문서는 열이 어긋날 수 있습니다. 변환 후 미리보기로 확인해 주세요.</span>
+      </p>
+
+      <div class="btn-row">
+        <button class="btn" type="button" data-run="excel" disabled>표 분석하기</button>
+      </div>
+    </div>
+
+    <!-- 텍스트 -->
+    <div class="panel" role="tabpanel" id="panel-text" aria-labelledby="tab-text" tabindex="0" hidden>
+      <div class="opt-grid">
+        <div>
+          <p class="opt-label" id="lbl-tx-range">페이지 범위</p>
+          <input type="text" id="tx-range" inputmode="numeric"
+                 placeholder="비우면 전체" aria-labelledby="lbl-tx-range" aria-describedby="hint-tx-range">
+          <p class="opt-hint" id="hint-tx-range">여러 페이지면 페이지마다 구분선을 넣습니다.</p>
+        </div>
+      </div>
+      <div class="btn-row">
+        <button class="btn" type="button" data-run="text" disabled>텍스트 추출</button>
+      </div>
+    </div>
+
+    <!-- 분할 -->
+    <div class="panel" role="tabpanel" id="panel-split" aria-labelledby="tab-split" tabindex="0" hidden>
+      <div class="opt-grid">
+        <fieldset>
+          <legend>결과 형태</legend>
+          <div class="seg">
+            <label class="seg-item"><input type="radio" name="sp-mode" value="single" checked><span>하나의 PDF</span></label>
+            <label class="seg-item"><input type="radio" name="sp-mode" value="each"><span>페이지별 개별 PDF (ZIP)</span></label>
+          </div>
+        </fieldset>
+
+        <div>
+          <p class="opt-label" id="lbl-sp-range">가져올 페이지</p>
+          <input type="text" id="sp-range" inputmode="numeric"
+                 placeholder="비우면 전체" aria-labelledby="lbl-sp-range" aria-describedby="hint-sp-range">
+          <p class="opt-hint" id="hint-sp-range">예: <code>1-10</code>, <code>3,5,9</code></p>
+        </div>
+      </div>
+      <div class="btn-row">
+        <button class="btn" type="button" data-run="split" disabled>PDF 만들기</button>
+      </div>
+    </div>
+
+    <!-- 진행 상황 -->
+    <div class="progress-box" id="progress-box" hidden>
+      <div class="progress-head">
+        <span id="progress-label">처리 중…</span>
+        <span id="progress-count">0 / 0</span>
+      </div>
+      <progress id="progress-bar" max="100" value="0"></progress>
+    </div>
+  </section>
+
+  <!-- ── 3. 결과 ──────────────────────────────────── -->
+  <section class="block results" id="results" aria-labelledby="res-h" hidden>
+    <div class="result-head">
+      <h2 class="result-title" id="res-h">결과</h2>
+      <p class="result-meta" id="res-meta"></p>
+    </div>
+    <div class="btn-row" id="res-actions" style="margin-bottom:16px"></div>
+    <div id="res-body"></div>
+    <ul class="log" id="res-log"></ul>
+  </section>
+
+  <p class="visually-hidden" id="live" aria-live="polite"></p>
+
+</main>
+
+<footer class="site-foot">
+  <div class="wrap">
+    <p>모든 변환은 브라우저 안에서 실행됩니다. 파일이 서버로 올라가는 경로는 이 앱에 존재하지 않습니다.</p>
+    <p>pdf.js 3.11.174 · SheetJS 0.18.5 · JSZip 3.10.1 · pdf-lib 1.17.1 — 모두 <code>vendor/</code>에 자체 호스팅</p>
+    <p><a href="../index.html">← 소글 홈으로</a></p>
+  </div>
+</footer>
+
+<script src="./vendor/pdf.min.js"></script>
+<script src="./vendor/xlsx.full.min.js"></script>
+<script src="./vendor/jszip.min.js"></script>
+<script src="./vendor/pdf-lib.min.js"></script>
+<script>
+/* ============================================================
+   로컬 PDF 변환기 — 전체 로직
+   외부로 나가는 네트워크 호출은 이 파일 어디에도 없다.
+   ============================================================ */
+(function () {
+  "use strict";
+
+  /* ---------- 워커: 같은 도메인의 자체 호스팅 파일 ---------- */
+  pdfjsLib.GlobalWorkerOptions.workerSrc = "./vendor/pdf.worker.min.js";
+
+  /* ---------- 상수 ---------- */
+  // iOS 사파리는 캔버스 총 면적 약 16.7M px, 한 변 4096px를 넘으면 렌더가 실패한다.
+  var MAX_CANVAS_AREA = 16700000;
+  var MAX_CANVAS_SIDE = 4096;
+  var THUMB_WIDTH = 200;          // 썸네일은 원본 대신 작게 — DOM 메모리 절약
+  var BIG_FILE_BYTES = 25 * 1024 * 1024;
+  var BIG_FILE_PAGES = 40;
+  var TEXT_SAMPLE_PAGES = 5;      // 스캔 PDF 판별용 표본
+  var TEXT_MIN_CHARS = 20;        // 표본에서 이만큼도 없으면 텍스트 레이어 없음으로 본다
+  var PREVIEW_ROWS = 40;
+
+  /* ---------- 상태 ---------- */
+  var state = {
+    fileName: "",
+    baseName: "",
+    fileSize: 0,
+    bytes: null,      // Uint8Array — 원본. 넘길 때는 항상 복사본을 만든다.
+    pdf: null,        // pdf.js 문서
+    pageCount: 0,
+    hasText: false,
+    mode: "image",
+    busy: false,
+    objectUrls: []    // 만든 blob URL — 새 작업 시작 때 정리
+  };
+
+  /* ---------- 짧은 도우미 ---------- */
+  function $(sel) { return document.querySelector(sel); }
+  function $all(sel) { return Array.prototype.slice.call(document.querySelectorAll(sel)); }
+
+  function esc(v) {
+    return String(v == null ? "" : v).replace(/[&<>"']/g, function (c) {
+      return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c];
+    });
+  }
+
+  function announce(msg) {
+    var live = $("#live");
+    live.textContent = "";
+    setTimeout(function () { live.textContent = msg; }, 60);
+  }
+
+  function formatBytes(n) {
+    if (n < 1024) return n + " B";
+    if (n < 1024 * 1024) return (n / 1024).toFixed(0) + " KB";
+    return (n / 1024 / 1024).toFixed(1) + " MB";
+  }
+
+  // 파일명에 쓸 수 없는 글자를 걷어낸다
+  function safeName(name) {
+    return String(name).replace(/[\\/:*?"<>|]+/g, "_").replace(/\s+/g, " ").trim() || "document";
+  }
+
+  /* pdf.js / pdf-lib에 넘기는 순간 원본 ArrayBuffer가 detach되어
+     두 번째 작업에서 "Cannot perform Construct on a detached ArrayBuffer"가 난다.
+     그래서 넘길 때마다 새 복사본을 만든다. */
+  function bytesCopy() {
+    return state.bytes.slice();
+  }
+
+  /* ---------- 페이지 범위 파서 ---------- */
+  function parseRange(input, total) {
+    var text = String(input || "").trim();
+    var all = [];
+    var i;
+    for (i = 1; i <= total; i++) all.push(i);
+    if (!text) return all;
+
+    var out = [];
+    var seen = {};
+    text.split(",").forEach(function (chunk) {
+      var part = chunk.trim();
+      if (!part) return;
+      var m = part.match(/^(\d+)\s*[-~]\s*(\d+)$/);
+      if (m) {
+        var a = parseInt(m[1], 10);
+        var b = parseInt(m[2], 10);
+        if (a > b) { var t = a; a = b; b = t; }
+        for (var p = a; p <= b; p++) {
+          if (p >= 1 && p <= total && !seen[p]) { seen[p] = 1; out.push(p); }
+        }
+        return;
+      }
+      var n = parseInt(part, 10);
+      if (!isNaN(n) && n >= 1 && n <= total && !seen[n]) { seen[n] = 1; out.push(n); }
+    });
+    out.sort(function (x, y) { return x - y; });
+    return out;
+  }
+
+  /* ---------- 다운로드 ---------- */
+  function download(blob, filename) {
+    var url = URL.createObjectURL(blob);
+    var a = document.createElement("a");
+    a.href = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    // 사파리가 다운로드를 시작할 시간을 준 뒤 회수한다
+    setTimeout(function () { URL.revokeObjectURL(url); }, 4000);
+  }
+
+  function revokeAll() {
+    state.objectUrls.forEach(function (u) { URL.revokeObjectURL(u); });
+    state.objectUrls = [];
+  }
+
+  /* ---------- 캔버스 ---------- */
+  /* 요청 배율이 기기 한계를 넘으면 이 페이지에 한해 배율을 낮춘다 */
+  function fitScale(page, wanted) {
+    var base = page.getViewport({ scale: 1 });
+    var scale = wanted;
+    var w = base.width * scale;
+    var h = base.height * scale;
+
+    if (w * h > MAX_CANVAS_AREA) {
+      scale = scale * Math.sqrt(MAX_CANVAS_AREA / (w * h));
+      w = base.width * scale;
+      h = base.height * scale;
+    }
+    var longest = Math.max(w, h);
+    if (longest > MAX_CANVAS_SIDE) {
+      scale = scale * (MAX_CANVAS_SIDE / longest);
+    }
+    return Math.max(0.1, scale);
+  }
+
+  /* 캔버스가 잡고 있는 메모리를 즉시 놓아준다 */
+  function releaseCanvas(canvas) {
+    try {
+      canvas.width = 0;
+      canvas.height = 0;
+    } catch (e) { /* 무시 */ }
+  }
+
+  function dataURLToBlob(dataURL) {
+    var parts = dataURL.split(",");
+    var mime = (parts[0].match(/:(.*?);/) || [])[1] || "image/png";
+    var bin = atob(parts[1]);
+    var len = bin.length;
+    var arr = new Uint8Array(len);
+    for (var i = 0; i < len; i++) arr[i] = bin.charCodeAt(i);
+    return new Blob([arr], { type: mime });
+  }
+
+  /* toBlob이 null을 주는 브라우저(구형 사파리, 메모리 압박)에서는 toDataURL로 폴백 */
+  function canvasToBlob(canvas, mime, quality) {
+    return new Promise(function (resolve, reject) {
+      var fallback = function () {
+        try {
+          resolve(dataURLToBlob(canvas.toDataURL(mime, quality)));
+        } catch (e) {
+          reject(new Error("이미지를 만들지 못했습니다(메모리 부족일 수 있습니다)."));
+        }
+      };
+      if (typeof canvas.toBlob !== "function") return fallback();
+      try {
+        canvas.toBlob(function (blob) {
+          if (blob && blob.size > 0) resolve(blob);
+          else fallback();
+        }, mime, quality);
+      } catch (e) {
+        fallback();
+      }
+    });
+  }
+
+  /* 원본 캔버스를 작은 썸네일 데이터 URL로 줄인다 */
+  function makeThumb(canvas) {
+    var ratio = THUMB_WIDTH / canvas.width;
+    var tw = Math.max(1, Math.round(canvas.width * ratio));
+    var th = Math.max(1, Math.round(canvas.height * ratio));
+    var t = document.createElement("canvas");
+    t.width = tw;
+    t.height = th;
+    var ctx = t.getContext("2d");
+    ctx.fillStyle = "#FFFFFF";
+    ctx.fillRect(0, 0, tw, th);
+    ctx.drawImage(canvas, 0, 0, tw, th);
+    var url;
+    try {
+      url = t.toDataURL("image/jpeg", 0.72);
+    } catch (e) {
+      url = "";
+    }
+    releaseCanvas(t);
+    return { url: url, w: tw, h: th };
+  }
+
+  /* ---------- 진행 표시 ---------- */
+  function progressStart(label, total) {
+    $("#progress-box").hidden = false;
+    $("#progress-label").textContent = label;
+    $("#progress-bar").value = 0;
+    $("#progress-count").textContent = "0 / " + total;
+  }
+  function progressStep(done, total) {
+    $("#progress-bar").value = total ? Math.round((done / total) * 100) : 0;
+    $("#progress-count").textContent = done + " / " + total;
+  }
+  function progressEnd() {
+    $("#progress-box").hidden = true;
+  }
+
+  function setBusy(on) {
+    state.busy = on;
+    $all("[data-run]").forEach(function (b) {
+      b.disabled = on || !state.pdf;
+    });
+  }
+
+  /* ---------- 결과 영역 ---------- */
+  function resultReset(title, meta) {
+    revokeAll();
+    var box = $("#results");
+    box.hidden = false;
+    $("#res-h").textContent = title;
+    $("#res-meta").textContent = meta || "";
+    $("#res-actions").innerHTML = "";
+    $("#res-body").innerHTML = "";
+    $("#res-log").innerHTML = "";
+  }
+
+  function resultAction(label, kind, onClick) {
+    var b = document.createElement("button");
+    b.type = "button";
+    b.className = "btn " + (kind || "");
+    b.textContent = label;
+    b.addEventListener("click", onClick);
+    $("#res-actions").appendChild(b);
+    return b;
+  }
+
+  function logLine(text, isError) {
+    var li = document.createElement("li");
+    li.textContent = text;
+    if (isError) li.className = "err";
+    $("#res-log").appendChild(li);
+  }
+
+  /* ==========================================================
+     파일 열기
+     ========================================================== */
+
+  function showLoadError(message) {
+    $("#load-error-text").textContent = message;
+    $("#load-error").hidden = false;
+  }
+
+  function clearLoadError() {
+    $("#load-error").hidden = true;
+    $("#load-error-text").textContent = "";
+  }
+
+  async function openFile(file) {
+    clearLoadError();
+
+    if (!file) return;
+    var isPdf = file.type === "application/pdf" || /\.pdf$/i.test(file.name);
+    if (!isPdf) {
+      showLoadError("PDF 파일만 열 수 있습니다. 선택한 파일: " + file.name);
+      return;
+    }
+
+    // 이전 문서 정리
+    if (state.pdf) {
+      try { await state.pdf.destroy(); } catch (e) { /* 무시 */ }
+      state.pdf = null;
+    }
+    revokeAll();
+    $("#results").hidden = true;
+
+    try {
+      var buf = await file.arrayBuffer();
+      state.bytes = new Uint8Array(buf);
+      state.fileName = file.name;
+      state.baseName = safeName(file.name.replace(/\.pdf$/i, ""));
+      state.fileSize = file.size;
+
+      var task = pdfjsLib.getDocument({ data: bytesCopy() });
+      state.pdf = await task.promise;
+      state.pageCount = state.pdf.numPages;
+    } catch (err) {
+      state.pdf = null;
+      state.bytes = null;
+      var msg = String(err && err.message || err);
+      if (/password/i.test(msg)) {
+        showLoadError("암호가 걸린 PDF입니다. 암호를 푼 파일로 다시 시도해 주세요.");
+      } else {
+        showLoadError("PDF를 열지 못했습니다. 파일이 손상되었을 수 있습니다. (" + msg + ")");
+      }
+      setBusy(false);
+      return;
+    }
+
+    // 텍스트 레이어 유무 확인 (앞 몇 페이지만 표본으로 본다)
+    state.hasText = await detectText(state.pdf, state.pageCount);
+
+    renderFileMeta();
+    setBusy(false);
+    announce(state.fileName + " 열기 완료. 총 " + state.pageCount + "쪽.");
+  }
+
+  async function detectText(pdf, pageCount) {
+    var limit = Math.min(TEXT_SAMPLE_PAGES, pageCount);
+    var chars = 0;
+    for (var i = 1; i <= limit; i++) {
+      try {
+        var page = await pdf.getPage(i);
+        var tc = await page.getTextContent();
+        tc.items.forEach(function (it) {
+          if (it.str) chars += it.str.trim().length;
+        });
+        page.cleanup();
+        if (chars >= TEXT_MIN_CHARS) return true;
+      } catch (e) { /* 이 페이지는 건너뛴다 */ }
+    }
+    return chars >= TEXT_MIN_CHARS;
+  }
+
+  function renderFileMeta() {
+    $("#file-meta").hidden = false;
+    $("#fi-name").textContent = state.fileName;
+    $("#fi-size").textContent = formatBytes(state.fileSize);
+    $("#fi-pages").textContent = state.pageCount + "쪽";
+    $("#fi-text").textContent = state.hasText ? "있음" : "없음";
+
+    $("#scan-note").hidden = state.hasText;
+
+    var big = state.fileSize >= BIG_FILE_BYTES || state.pageCount >= BIG_FILE_PAGES;
+    $("#big-note").hidden = !big;
+    if (big) {
+      var reasons = [];
+      if (state.fileSize >= BIG_FILE_BYTES) reasons.push(formatBytes(state.fileSize));
+      if (state.pageCount >= BIG_FILE_PAGES) reasons.push(state.pageCount + "쪽");
+      $("#big-reason").textContent = reasons.join(" · ") + " 문서입니다.";
+    }
+  }
+
+  /* ==========================================================
+     모드 1 — 이미지
+     ========================================================== */
+
+  async function runImage() {
+    var format = document.querySelector('input[name="img-format"]:checked').value;
+    var wanted = parseFloat(document.querySelector('input[name="img-scale"]:checked').value);
+    var pages = parseRange($("#img-range").value, state.pageCount);
+
+    if (!pages.length) {
+      showRangeError("#img-range");
+      return;
+    }
+
+    var mime = format === "png" ? "image/png" : "image/jpeg";
+    var ext = format === "png" ? "png" : "jpg";
+    var quality = format === "png" ? undefined : 0.92;
+
+    setBusy(true);
+    resultReset("이미지 " + pages.length + "장", "");
+    progressStart("페이지를 이미지로 그리는 중", pages.length);
+
+    var list = document.createElement("ul");
+    list.className = "thumbs";
+    $("#res-body").appendChild(list);
+
+    var made = [];
+    var failed = 0;
+    var reduced = 0;
+
+    for (var i = 0; i < pages.length; i++) {
+      var pageNo = pages[i];
+      var canvas = null;
+      try {
+        var page = await state.pdf.getPage(pageNo);
+        var scale = fitScale(page, wanted);
+        if (scale < wanted - 0.001) reduced++;
+
+        var viewport = page.getViewport({ scale: scale });
+        canvas = document.createElement("canvas");
+        canvas.width = Math.max(1, Math.floor(viewport.width));
+        canvas.height = Math.max(1, Math.floor(viewport.height));
+        var ctx = canvas.getContext("2d", { alpha: false });
+        // JPG는 투명을 지원하지 않아 흰 바탕을 먼저 깔아야 검게 나오지 않는다
+        ctx.fillStyle = "#FFFFFF";
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+        await page.render({ canvasContext: ctx, viewport: viewport }).promise;
+
+        var blob = await canvasToBlob(canvas, mime, quality);
+        var thumb = makeThumb(canvas);
+        var name = state.baseName + "_p" + String(pageNo).padStart(3, "0") + "." + ext;
+
+        made.push({ page: pageNo, blob: blob, name: name });
+        appendThumb(list, {
+          page: pageNo, name: name, blob: blob, thumb: thumb,
+          size: canvas.width + "×" + canvas.height, bytes: blob.size
+        });
+
+        page.cleanup();
+      } catch (err) {
+        failed++;
+        appendThumbFailed(list, pageNo);
+        logLine(pageNo + "쪽 실패: " + (err && err.message || err), true);
+      } finally {
+        // 성공했든 실패했든 캔버스는 반드시 놓아준다
+        if (canvas) releaseCanvas(canvas);
+      }
+      progressStep(i + 1, pages.length);
+      // 큰 문서에서 UI가 멈춘 것처럼 보이지 않도록 프레임을 양보한다
+      await new Promise(function (r) { setTimeout(r, 0); });
+    }
+
+    progressEnd();
+    setBusy(false);
+
+    var metaBits = [made.length + "장 성공"];
+    if (failed) metaBits.push(failed + "장 실패");
+    if (reduced) metaBits.push(reduced + "장은 기기 한계로 배율 자동 축소");
+    $("#res-meta").textContent = metaBits.join(" · ");
+
+    if (made.length > 1) {
+      resultAction("전체 ZIP으로 저장 (" + made.length + "장)", "", function () {
+        zipAndSave(made, state.baseName + "_images.zip");
+      });
+    }
+    if (made.length === 1) {
+      resultAction("이미지 저장", "", function () {
+        download(made[0].blob, made[0].name);
+      });
+    }
+    announce("이미지 변환 완료. " + made.length + "장 만들었습니다.");
+  }
+
+  function appendThumb(list, item) {
+    var li = document.createElement("li");
+    var btn = document.createElement("button");
+    btn.type = "button";
+    btn.className = "thumb-btn";
+
+    var img = document.createElement("img");
+    img.src = item.thumb.url;
+    img.width = item.thumb.w;
+    img.height = item.thumb.h;
+    img.alt = "";           // 캡션이 페이지 번호를 말해주므로 장식으로 둔다
+    img.loading = "lazy";
+
+    var cap = document.createElement("span");
+    cap.className = "thumb-cap";
+    cap.innerHTML = '<span class="pg">' + item.page + "쪽</span><span>" + formatBytes(item.bytes) + "</span>";
+
+    var cap2 = document.createElement("span");
+    cap2.className = "thumb-cap";
+    cap2.innerHTML = "<span>" + esc(item.size) + "</span><span>저장 ↓</span>";
+
+    btn.appendChild(img);
+    btn.appendChild(cap);
+    btn.appendChild(cap2);
+    btn.setAttribute("aria-label", item.page + "쪽 이미지 저장. " + item.size + " 픽셀, " + formatBytes(item.bytes));
+    btn.addEventListener("click", function () {
+      download(item.blob, item.name);
+      announce(item.page + "쪽을 저장했습니다.");
+    });
+
+    li.appendChild(btn);
+    list.appendChild(li);
+  }
+
+  function appendThumbFailed(list, pageNo) {
+    var li = document.createElement("li");
+    li.innerHTML =
+      '<div class="thumb-btn failed"><div class="thumb-fail">' + pageNo + "쪽<br>변환 실패</div>" +
+      '<span class="thumb-cap"><span class="pg">' + pageNo + "쪽</span><span>건너뜀</span></span></div>";
+    list.appendChild(li);
+  }
+
+  async function zipAndSave(items, zipName) {
+    setBusy(true);
+    progressStart("ZIP으로 묶는 중", items.length);
+    try {
+      var zip = new JSZip();
+      items.forEach(function (it) { zip.file(it.name, it.blob); });
+      var blob = await zip.generateAsync({ type: "blob", compression: "STORE" }, function (meta) {
+        $("#progress-bar").value = Math.round(meta.percent);
+        $("#progress-count").textContent = Math.round(meta.percent) + "%";
+      });
+      download(blob, zipName);
+      announce("ZIP 파일을 저장했습니다.");
+    } catch (err) {
+      logLine("ZIP 생성 실패: " + (err && err.message || err), true);
+    } finally {
+      progressEnd();
+      setBusy(false);
+    }
+  }
+
+  /* ==========================================================
+     텍스트 좌표 → 행·열 재구성
+     표 선을 읽는 게 아니라 글자 위치로 구조를 "추정"한다.
+     ========================================================== */
+
+  /* 같은 y에 있는 글자들을 한 행으로 묶는다 */
+  function buildRows(items) {
+    var els = [];
+    items.forEach(function (it) {
+      if (!it.str || !it.str.trim()) return;
+      var tf = it.transform || [1, 0, 0, 1, 0, 0];
+      var h = it.height || Math.abs(tf[3]) || 10;
+      els.push({ x: tf[4], y: tf[5], w: it.width || 0, h: h, s: it.str });
+    });
+    if (!els.length) return { rows: [], medH: 10 };
+
+    var hs = els.map(function (e) { return e.h; }).sort(function (a, b) { return a - b; });
+    var medH = hs[Math.floor(hs.length / 2)] || 10;
+    var tol = Math.max(2, medH * 0.6);
+
+    // 위에서 아래로(y 내림차순), 같은 줄이면 왼쪽부터
+    els.sort(function (a, b) { return (b.y - a.y) || (a.x - b.x); });
+
+    var rows = [];
+    var cur = [els[0]];
+    var curY = els[0].y;
+    for (var i = 1; i < els.length; i++) {
+      if (Math.abs(els[i].y - curY) <= tol) {
+        cur.push(els[i]);
+      } else {
+        rows.push(cur);
+        cur = [els[i]];
+        curY = els[i].y;
+      }
+    }
+    rows.push(cur);
+
+    rows.forEach(function (r) { r.sort(function (a, b) { return a.x - b.x; }); });
+    return { rows: rows, medH: medH };
+  }
+
+  /* 한 행 안에서 가로 간격이 크게 벌어지면 다른 칸으로 끊는다 */
+  function rowToCells(row) {
+    var runs = [];
+    var first = row[0];
+    var cur = { x: first.x, end: first.x + first.w, text: first.s };
+
+    for (var i = 1; i < row.length; i++) {
+      var it = row[i];
+      var gap = it.x - cur.end;
+      var charW = it.s.length ? (it.w / it.s.length) : it.h * 0.5;
+      if (charW <= 0) charW = it.h * 0.5;
+      var breakAt = Math.max(charW * 1.6, it.h * 0.7);
+
+      if (gap > breakAt) {
+        runs.push(cur);
+        cur = { x: it.x, end: it.x + it.w, text: it.s };
+      } else {
+        cur.text += (gap > charW * 0.28 ? " " : "") + it.s;
+        cur.end = it.x + it.w;
+      }
+    }
+    runs.push(cur);
+
+    return runs.map(function (r) {
+      return { x: r.x, text: r.text.replace(/\s+/g, " ").trim() };
+    }).filter(function (r) { return r.text.length > 0; });
+  }
+
+  /* 페이지 전체의 칸 시작 x를 모아 열 기준선을 만든다 */
+  function buildColumns(allCells, tol) {
+    var xs = allCells.map(function (c) { return c.x; }).sort(function (a, b) { return a - b; });
+    if (!xs.length) return [];
+    var cols = [];
+    var group = [xs[0]];
+    for (var i = 1; i < xs.length; i++) {
+      if (xs[i] - group[group.length - 1] <= tol) {
+        group.push(xs[i]);
+      } else {
+        cols.push(avg(group));
+        group = [xs[i]];
+      }
+    }
+    cols.push(avg(group));
+    return cols;
+  }
+
+  function avg(arr) {
+    var s = 0;
+    for (var i = 0; i < arr.length; i++) s += arr[i];
+    return s / arr.length;
+  }
+
+  function nearestColumn(cols, x) {
+    var best = 0;
+    var bestD = Infinity;
+    for (var i = 0; i < cols.length; i++) {
+      var d = Math.abs(cols[i] - x);
+      if (d < bestD) { bestD = d; best = i; }
+    }
+    return best;
+  }
+
+  /* 한 페이지의 텍스트를 2차원 표로 재구성 */
+  async function pageToTable(pageNo) {
+    var page = await state.pdf.getPage(pageNo);
+    var tc = await page.getTextContent();
+    var built = buildRows(tc.items);
+    page.cleanup();
+
+    if (!built.rows.length) return [];
+
+    var rowCells = built.rows.map(rowToCells).filter(function (cells) { return cells.length > 0; });
+    if (!rowCells.length) return [];
+
+    var flat = [];
+    rowCells.forEach(function (cells) { flat = flat.concat(cells); });
+
+    var cols = buildColumns(flat, Math.max(4, built.medH * 1.2));
+    if (!cols.length) return [];
+
+    return rowCells.map(function (cells) {
+      var line = new Array(cols.length).fill("");
+      cells.forEach(function (c) {
+        var idx = nearestColumn(cols, c.x);
+        line[idx] = line[idx] ? (line[idx] + " " + c.text) : c.text;
+      });
+      return line;
+    });
+  }
+
+  /* 한 페이지의 텍스트를 줄 단위 문자열로 */
+  async function pageToLines(pageNo) {
+    var page = await state.pdf.getPage(pageNo);
+    var tc = await page.getTextContent();
+    var built = buildRows(tc.items);
+    page.cleanup();
+
+    return built.rows.map(function (row) {
+      return rowToCells(row).map(function (c) { return c.text; }).join(" ").trim();
+    }).filter(function (line) { return line.length > 0; });
+  }
+
+  /* ==========================================================
+     모드 2 — Excel
+     ========================================================== */
+
+  async function runExcel() {
+    var perPage = document.querySelector('input[name="xl-sheet"]:checked').value === "per-page";
+    var pages = parseRange($("#xl-range").value, state.pageCount);
+
+    if (!pages.length) { showRangeError("#xl-range"); return; }
+
+    setBusy(true);
+    resultReset("표 분석 결과", "");
+    progressStart("글자 좌표를 읽는 중", pages.length);
+
+    var perPageTables = [];
+    var failed = 0;
+
+    for (var i = 0; i < pages.length; i++) {
+      try {
+        var table = await pageToTable(pages[i]);
+        perPageTables.push({ page: pages[i], rows: table });
+      } catch (err) {
+        failed++;
+        perPageTables.push({ page: pages[i], rows: [] });
+        logLine(pages[i] + "쪽 분석 실패: " + (err && err.message || err), true);
+      }
+      progressStep(i + 1, pages.length);
+      await new Promise(function (r) { setTimeout(r, 0); });
+    }
+
+    progressEnd();
+
+    var totalRows = perPageTables.reduce(function (n, t) { return n + t.rows.length; }, 0);
+
+    if (totalRows === 0) {
+      setBusy(false);
+      $("#res-meta").textContent = "추출된 행 없음";
+      $("#res-body").innerHTML =
+        '<p class="note warn"><span class="note-tag">비어 있음</span><span>' +
+        (state.hasText
+          ? "선택한 페이지에서 글자를 찾지 못했습니다. 다른 페이지 범위를 지정해 보세요."
+          : "이 PDF에는 글자 정보가 없습니다(스캔 문서). OCR을 거치지 않으면 표를 만들 수 없습니다. 이미지 변환을 권합니다.") +
+        "</span></p>";
+      announce("추출된 표가 없습니다.");
+      return;
+    }
+
+    // 워크북 구성
+    var wb = XLSX.utils.book_new();
+    var merged = [];
+
+    if (perPage) {
+      perPageTables.forEach(function (t) {
+        if (!t.rows.length) return;
+        var ws = XLSX.utils.aoa_to_sheet(t.rows);
+        XLSX.utils.book_append_sheet(wb, ws, "p" + t.page);
+      });
+    } else {
+      perPageTables.forEach(function (t, idx) {
+        if (!t.rows.length) return;
+        if (idx > 0 && merged.length) merged.push([]);   // 페이지 사이 빈 줄
+        merged.push(["[페이지 " + t.page + "]"]);
+        merged = merged.concat(t.rows);
+      });
+      var wsAll = XLSX.utils.aoa_to_sheet(merged);
+      XLSX.utils.book_append_sheet(wb, wsAll, "전체");
+    }
+
+    var metaBits = [pages.length + "쪽 분석", totalRows + "행 추출"];
+    if (failed) metaBits.push(failed + "쪽 실패");
+    $("#res-meta").textContent = metaBits.join(" · ");
+
+    resultAction("XLSX로 저장", "", function () {
+      try {
+        var out = XLSX.write(wb, { bookType: "xlsx", type: "array" });
+        download(new Blob([out], {
+          type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+        }), state.baseName + ".xlsx");
+        announce("엑셀 파일을 저장했습니다.");
+      } catch (err) {
+        logLine("XLSX 생성 실패: " + (err && err.message || err), true);
+      }
+    });
+
+    resultAction("CSV로 저장", "secondary", function () {
+      var rowsForCsv = perPage
+        ? perPageTables.reduce(function (acc, t) {
+            if (!t.rows.length) return acc;
+            if (acc.length) acc.push([]);
+            acc.push(["[페이지 " + t.page + "]"]);
+            return acc.concat(t.rows);
+          }, [])
+        : merged;
+      var ws = XLSX.utils.aoa_to_sheet(rowsForCsv);
+      var csv = XLSX.utils.sheet_to_csv(ws);
+      // 엑셀이 한글 CSV를 깨뜨리지 않도록 BOM을 붙인다
+      download(new Blob(["﻿" + csv], { type: "text/csv;charset=utf-8" }),
+        state.baseName + ".csv");
+      announce("CSV 파일을 저장했습니다.");
+    });
+
+    renderTablePreview(perPageTables);
+    setBusy(false);
+  }
+
+  function renderTablePreview(perPageTables) {
+    var body = $("#res-body");
+    var shown = 0;
+
+    perPageTables.forEach(function (t) {
+      if (!t.rows.length || shown >= PREVIEW_ROWS) return;
+
+      var take = t.rows.slice(0, Math.max(0, PREVIEW_ROWS - shown));
+      shown += take.length;
+
+      var colCount = take.reduce(function (m, r) { return Math.max(m, r.length); }, 0);
+
+      var html = '<div class="table-scroll" style="margin-bottom:16px"><table>';
+      html += "<caption>페이지 " + t.page + " — " + t.rows.length + "행 × " + colCount + "열" +
+              (take.length < t.rows.length ? " (앞 " + take.length + "행만 미리보기)" : "") + "</caption>";
+      html += "<thead><tr>";
+      for (var c = 0; c < colCount; c++) html += "<th scope=\"col\">" + String.fromCharCode(65 + (c % 26)) + "</th>";
+      html += "</tr></thead><tbody>";
+      take.forEach(function (row) {
+        html += "<tr>";
+        for (var c2 = 0; c2 < colCount; c2++) html += "<td>" + esc(row[c2] || "") + "</td>";
+        html += "</tr>";
+      });
+      html += "</tbody></table></div>";
+
+      var div = document.createElement("div");
+      div.innerHTML = html;
+      body.appendChild(div);
+    });
+
+    if (shown >= PREVIEW_ROWS) {
+      var p = document.createElement("p");
+      p.className = "opt-hint";
+      p.textContent = "미리보기는 " + PREVIEW_ROWS + "행까지만 보여줍니다. 저장한 파일에는 전부 들어 있습니다.";
+      body.appendChild(p);
+    }
+  }
+
+  /* ==========================================================
+     모드 3 — 텍스트
+     ========================================================== */
+
+  async function runText() {
+    var pages = parseRange($("#tx-range").value, state.pageCount);
+    if (!pages.length) { showRangeError("#tx-range"); return; }
+
+    setBusy(true);
+    resultReset("텍스트 추출", "");
+    progressStart("본문을 줄 단위로 재구성하는 중", pages.length);
+
+    var chunks = [];
+    var failed = 0;
+    var lineCount = 0;
+
+    for (var i = 0; i < pages.length; i++) {
+      try {
+        var lines = await pageToLines(pages[i]);
+        lineCount += lines.length;
+        if (pages.length > 1) {
+          chunks.push("───── 페이지 " + pages[i] + " ─────");
+        }
+        chunks.push(lines.join("\n"));
+        if (pages.length > 1) chunks.push("");
+      } catch (err) {
+        failed++;
+        logLine(pages[i] + "쪽 실패: " + (err && err.message || err), true);
+      }
+      progressStep(i + 1, pages.length);
+      await new Promise(function (r) { setTimeout(r, 0); });
+    }
+
+    progressEnd();
+
+    var text = chunks.join("\n").replace(/\n{3,}/g, "\n\n").trim();
+
+    if (!text) {
+      setBusy(false);
+      $("#res-meta").textContent = "추출된 글자 없음";
+      $("#res-body").innerHTML =
+        '<p class="note warn"><span class="note-tag">비어 있음</span><span>' +
+        (state.hasText
+          ? "선택한 페이지에서 글자를 찾지 못했습니다."
+          : "이 PDF에는 글자 정보가 없습니다(스캔 문서). OCR이 필요합니다. 이미지 변환을 권합니다.") +
+        "</span></p>";
+      announce("추출된 텍스트가 없습니다.");
+      return;
+    }
+
+    var metaBits = [pages.length + "쪽", lineCount + "줄", text.length.toLocaleString("ko-KR") + "자"];
+    if (failed) metaBits.push(failed + "쪽 실패");
+    $("#res-meta").textContent = metaBits.join(" · ");
+
+    resultAction("TXT로 저장", "", function () {
+      download(new Blob(["﻿" + text], { type: "text/plain;charset=utf-8" }),
+        state.baseName + ".txt");
+      announce("텍스트 파일을 저장했습니다.");
+    });
+
+    var copyBtn = resultAction("클립보드에 복사", "secondary", function () {
+      copyText(text, copyBtn);
+    });
+
+    var pre = document.createElement("pre");
+    pre.className = "text-pre";
+    pre.tabIndex = 0;                       // 키보드로도 스크롤할 수 있게
+    pre.setAttribute("aria-label", "추출한 텍스트 미리보기");
+    pre.textContent = text;
+    $("#res-body").appendChild(pre);
+
+    setBusy(false);
+  }
+
+  function copyText(text, btn) {
+    var done = function () {
+      announce("텍스트를 복사했습니다.");
+      if (btn) {
+        var old = btn.textContent;
+        btn.textContent = "복사 완료";
+        setTimeout(function () { btn.textContent = old; }, 1800);
+      }
+    };
+    if (navigator.clipboard && window.isSecureContext) {
+      navigator.clipboard.writeText(text).then(done, fallbackCopy);
+    } else {
+      fallbackCopy();
+    }
+    function fallbackCopy() {
+      var ta = document.createElement("textarea");
+      ta.value = text;
+      ta.setAttribute("readonly", "");
+      ta.style.position = "fixed";
+      ta.style.opacity = "0";
+      document.body.appendChild(ta);
+      ta.select();
+      try {
+        document.execCommand("copy");
+        done();
+      } catch (e) {
+        announce("복사에 실패했습니다. 미리보기에서 직접 선택해 복사해 주세요.");
+      }
+      document.body.removeChild(ta);
+    }
+  }
+
+  /* ==========================================================
+     모드 4 — PDF 분할
+     ========================================================== */
+
+  async function runSplit() {
+    var each = document.querySelector('input[name="sp-mode"]:checked').value === "each";
+    var pages = parseRange($("#sp-range").value, state.pageCount);
+    if (!pages.length) { showRangeError("#sp-range"); return; }
+
+    setBusy(true);
+    resultReset("PDF 분할", "");
+    progressStart(each ? "페이지별 PDF를 만드는 중" : "새 PDF를 만드는 중", pages.length);
+
+    try {
+      var srcDoc = await PDFLib.PDFDocument.load(bytesCopy());
+
+      if (!each) {
+        var out = await PDFLib.PDFDocument.create();
+        // pdf-lib는 0부터 세므로 1을 뺀다
+        var copied = await out.copyPages(srcDoc, pages.map(function (p) { return p - 1; }));
+        copied.forEach(function (pg) { out.addPage(pg); });
+        progressStep(pages.length, pages.length);
+
+        var bytes = await out.save();
+        var name = state.baseName + "_p" + pages[0] +
+                   (pages.length > 1 ? "-" + pages[pages.length - 1] : "") + ".pdf";
+        var blob = new Blob([bytes], { type: "application/pdf" });
+
+        $("#res-meta").textContent = pages.length + "쪽 · " + formatBytes(blob.size);
+        resultAction("PDF 저장", "", function () {
+          download(blob, name);
+          announce("PDF를 저장했습니다.");
+        });
+        renderSplitSummary(pages, [name]);
+      } else {
+        var items = [];
+        for (var i = 0; i < pages.length; i++) {
+          try {
+            var one = await PDFLib.PDFDocument.create();
+            var pg = await one.copyPages(srcDoc, [pages[i] - 1]);
+            one.addPage(pg[0]);
+            var b = await one.save();
+            var fname = state.baseName + "_p" + String(pages[i]).padStart(3, "0") + ".pdf";
+            items.push({ name: fname, blob: new Blob([b], { type: "application/pdf" }) });
+          } catch (err) {
+            logLine(pages[i] + "쪽 실패: " + (err && err.message || err), true);
+          }
+          progressStep(i + 1, pages.length);
+          await new Promise(function (r) { setTimeout(r, 0); });
+        }
+
+        $("#res-meta").textContent = items.length + "개 PDF";
+        if (items.length === 1) {
+          resultAction("PDF 저장", "", function () { download(items[0].blob, items[0].name); });
+        } else if (items.length > 1) {
+          resultAction("전체 ZIP으로 저장 (" + items.length + "개)", "", function () {
+            zipAndSave(items, state.baseName + "_split.zip");
+          });
+        }
+        renderSplitSummary(pages, items.map(function (it) { return it.name; }));
+      }
+      announce("PDF 분할이 끝났습니다.");
+    } catch (err) {
+      logLine("분할 실패: " + (err && err.message || err), true);
+      $("#res-meta").textContent = "실패";
+    } finally {
+      progressEnd();
+      setBusy(false);
+    }
+  }
+
+  function renderSplitSummary(pages, names) {
+    var body = $("#res-body");
+    var p = document.createElement("p");
+    p.className = "note";
+    p.innerHTML = '<span class="note-tag">담긴 페이지</span><span>' +
+      esc(pages.join(", ")) + "</span>";
+    body.appendChild(p);
+
+    if (names.length > 1) {
+      var ul = document.createElement("ul");
+      ul.className = "log";
+      names.slice(0, 30).forEach(function (n) {
+        var li = document.createElement("li");
+        li.textContent = n;
+        ul.appendChild(li);
+      });
+      if (names.length > 30) {
+        var more = document.createElement("li");
+        more.textContent = "… 외 " + (names.length - 30) + "개";
+        ul.appendChild(more);
+      }
+      body.appendChild(ul);
+    }
+  }
+
+  function showRangeError(sel) {
+    var input = $(sel);
+    input.focus();
+    resultReset("페이지 범위 확인", "");
+    $("#res-body").innerHTML =
+      '<p class="note warn"><span class="note-tag">범위 오류</span><span>' +
+      "지정한 범위에 해당하는 페이지가 없습니다. 이 문서는 1쪽부터 " + state.pageCount +
+      "쪽까지 있습니다.</span></p>";
+    announce("페이지 범위를 다시 확인해 주세요.");
+  }
+
+  /* ==========================================================
+     UI 연결
+     ========================================================== */
+
+  /* --- 파일 선택 & 드래그앤드롭 --- */
+  var dropzone = $("#dropzone");
+  var fileInput = $("#file-input");
+
+  dropzone.addEventListener("click", function (e) {
+    // input이나 그에 연결된 label을 직접 눌렀다면 브라우저가 이미 파일 창을 연다.
+    // 여기서 또 click()을 부르면 창이 두 번 뜨므로 그냥 빠져나간다.
+    if (e.target === fileInput) return;
+    if (e.target.closest && e.target.closest('label[for="file-input"]')) return;
+    fileInput.click();
+  });
+
+  fileInput.addEventListener("change", function () {
+    if (fileInput.files && fileInput.files[0]) openFile(fileInput.files[0]);
+  });
+
+  ["dragenter", "dragover"].forEach(function (type) {
+    dropzone.addEventListener(type, function (e) {
+      e.preventDefault();
+      e.stopPropagation();
+      dropzone.classList.add("is-over");
+    });
+  });
+  ["dragleave", "drop"].forEach(function (type) {
+    dropzone.addEventListener(type, function (e) {
+      e.preventDefault();
+      e.stopPropagation();
+      if (type === "dragleave" && dropzone.contains(e.relatedTarget)) return;
+      dropzone.classList.remove("is-over");
+    });
+  });
+  dropzone.addEventListener("drop", function (e) {
+    var dt = e.dataTransfer;
+    if (dt && dt.files && dt.files[0]) openFile(dt.files[0]);
+  });
+
+  // 창 밖으로 파일을 떨어뜨렸을 때 브라우저가 PDF를 열어버리는 것을 막는다
+  ["dragover", "drop"].forEach(function (type) {
+    window.addEventListener(type, function (e) {
+      if (!dropzone.contains(e.target)) e.preventDefault();
+    });
+  });
+
+  /* --- 탭 --- */
+  var tabs = $all('[role="tab"]');
+
+  function selectTab(id) {
+    tabs.forEach(function (t) {
+      var on = t.id === id;
+      t.setAttribute("aria-selected", on ? "true" : "false");
+      t.tabIndex = on ? 0 : -1;
+      document.getElementById(t.getAttribute("aria-controls")).hidden = !on;
+    });
+    state.mode = id.replace("tab-", "");
+  }
+
+  tabs.forEach(function (tab) {
+    tab.addEventListener("click", function () { selectTab(tab.id); });
+    tab.addEventListener("keydown", function (e) {
+      var i = tabs.indexOf(tab);
+      var next = null;
+      if (e.key === "ArrowRight") next = tabs[(i + 1) % tabs.length];
+      else if (e.key === "ArrowLeft") next = tabs[(i - 1 + tabs.length) % tabs.length];
+      else if (e.key === "Home") next = tabs[0];
+      else if (e.key === "End") next = tabs[tabs.length - 1];
+      if (next) {
+        e.preventDefault();
+        selectTab(next.id);
+        next.focus();
+      }
+    });
+  });
+
+  /* --- 실행 버튼 --- */
+  $all("[data-run]").forEach(function (btn) {
+    btn.addEventListener("click", function () {
+      if (state.busy || !state.pdf) return;
+      var kind = btn.dataset.run;
+      var job = kind === "image" ? runImage
+              : kind === "excel" ? runExcel
+              : kind === "text" ? runText
+              : runSplit;
+      job().catch(function (err) {
+        progressEnd();
+        setBusy(false);
+        resultReset("처리 중 오류", "");
+        $("#res-body").innerHTML =
+          '<p class="note warn"><span class="note-tag">오류</span><span>' +
+          esc(String(err && err.message || err)) +
+          " — 페이지 범위를 줄이거나 해상도를 낮춰 다시 시도해 보세요.</span></p>";
+        announce("처리 중 오류가 발생했습니다.");
+      });
+    });
+  });
+
+  /* --- 서비스 워커 (오프라인) --- */
+  if ("serviceWorker" in navigator) {
+    window.addEventListener("load", function () {
+      navigator.serviceWorker.register("./sw.js").catch(function () {
+        /* 오프라인 캐시는 부가 기능이라 실패해도 앱은 그대로 동작한다 */
+      });
+    });
+  }
+
+  setBusy(false);
+})();
+</script>
+
+</body>
+</html>

@@ -1,0 +1,5 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512" role="img" aria-label="로컬 PDF 변환기">
+  <rect width="512" height="512" rx="112" fill="#2540E8"/>
+  <path fill="#FFFFFF" d="M186 130h110l48 48v186a18 18 0 0 1-18 18H186a18 18 0 0 1-18-18V148a18 18 0 0 1 18-18z"/>
+  <path fill="#2540E8" d="M244 200h24v76h28l-40 46-40-46h28z"/>
+</svg>

@@ -12,7 +12,7 @@
 | Hero | 사이트 인트로와 슬로건 |
 | 소개 | 소글소글이 어떤 기록을 남기는지 |
 | 채널 | Instagram · YouTube · 네이버 블로그 · GitHub 링크 |
-| 프로젝트 | 직접 만든 웹 도구 카드 (Tonfit · 맛집 순위 · 오피스타임) |
+| 프로젝트 | 직접 만든 웹 도구 카드 (Tonfit · 맛집 순위 · 오피스타임 · PDF 변환기) |
 | 협업 문의 | 협업 가능 영역과 연락처 |
 
 ## 폴더 구조
@@ -20,9 +20,16 @@
 ```
 sogeul-site/
 ├── index.html                    # 포트폴리오 본문 마크업
+├── .nojekyll                     # GitHub Pages가 Jekyll로 가공하지 않게
 ├── html/
 │   ├── matjip.html               # 맛집 순위 페이지
 │   └── office.html               # 오피스타임 (팀 게임·챌린지 앱)
+├── pdf/                          # 로컬 PDF 변환기 (PWA · 자체 README 있음)
+│   ├── index.html
+│   ├── manifest.webmanifest
+│   ├── sw.js
+│   ├── assets/                   # 아이콘
+│   └── vendor/                   # pdf.js · SheetJS · JSZip · pdf-lib
 ├── assets/
 │   ├── css/
 │   │   ├── style.css             # 포트폴리오 스타일
@@ -165,6 +172,18 @@ python3 -m http.server 8000
   넘지 못해(각각 2.78 / 3.64 / 1.38 / 3.36), **원색은 면·핀·그래픽 전용**으로 두고
   텍스트에는 어둡게 파생한 `--coral-deep` `--teal-deep` `--lavender-deep`(5:1 이상)을 씁니다.
 - 데스크톱은 좌측 고정 사이드바, 860px 이하에서는 하단 탭바로 전환됩니다.
+
+## 로컬 PDF 변환기 (`pdf/`)
+
+PDF를 이미지·Excel·텍스트로 바꾸고 페이지를 나누는 정적 웹 앱입니다.
+파일이 서버로 올라가지 않고 브라우저 안에서만 처리되며, PWA로 설치하면 오프라인에서도 동작합니다.
+
+라이브러리(pdf.js · SheetJS · JSZip · pdf-lib)는 CDN이 아니라 `pdf/vendor/`에 자체 호스팅합니다.
+설정·한계·로컬 실행 방법은 **[pdf/README.md](pdf/README.md)** 에 따로 정리해 두었습니다.
+
+```bash
+cd pdf && python3 -m http.server 8000   # → http://localhost:8000/
+```
 
 ## 채널
 
