@@ -11,7 +11,7 @@
 | --- | --- |
 | Hero | 사이트 인트로와 슬로건 |
 | 소개 | 소글소글이 어떤 기록을 남기는지 |
-| 채널 | Instagram · YouTube · 네이버 블로그 · GitHub 링크 |
+| 채널 | Instagram · YouTube · 오늘의집 · 네이버 블로그 · GitHub 링크 |
 | 프로젝트 | 직접 만든 웹 도구 카드 (Tonfit · 맛집 순위 · 오피스타임 · PDF 변환기) |
 | 협업 문의 | 협업 가능 영역과 연락처 |
 
@@ -189,6 +189,7 @@ cd pdf && python3 -m http.server 8000   # → http://localhost:8000/
 
 - Instagram — [@_sogeul](https://www.instagram.com/_sogeul)
 - YouTube — [@sogeul](https://youtube.com/@sogeul)
+- 오늘의집 — [프로필 보기](https://ozip.me/87F7rpl)
 - 네이버 블로그 — [sogeulsogeul](https://m.blog.naver.com/sogeulsogeul)
 - GitHub — [sogeulsogeul](https://github.com/sogeulsogeul)
 
